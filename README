@@ -1,1 +1,12 @@
 testing
+git pull     -pulls latest changes changes unless (same file and different) merge conflict
+git add filename
+git rm filename
+git commit -m "yourmessage here"
+git push
+
+beond compare
+
+
+
+
