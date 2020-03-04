@@ -18,12 +18,12 @@ void main(int argc, char **argv){
 }
 
 int parse_line(struct parser *parse, int argc, char **argv){
-    int32_t c, vflag;
+    int32_t c;
     char *endptr;
     extern char *optarg;
     extern int optind;
 
-    while((c=getopt(argc, argv, "vp:s:")) != -1){
+    while((c=getopt(argc, argv, "hvp:s:")) != -1){
         switch(c){
             case 'v':
                 parse->verbose += 1;
@@ -50,6 +50,11 @@ int parse_line(struct parser *parse, int argc, char **argv){
                     print_usage();
                     return 1;
                 }
+                break;
+
+            case 'h':
+                print_usage();
+                return 1;
                 break;
 
             default:
@@ -82,4 +87,9 @@ int parse_line(struct parser *parse, int argc, char **argv){
 
 void print_usage(){
     printf("usage: minls [-v] [-p part [-s subpart]] imagefile [path]\n");
+    printf("Options:\n\t-p  part    --- select partition for filesystem");
+    printf("(default");
+    printf(": none)\n\t-s  sub     --- select subpartition for filesystem"); 
+    printf("(default: none)\n\t-h  help    --- print usage information and");
+    printf(" exit\n\t-v  verbose --- increase verbosity level\n");
 }
