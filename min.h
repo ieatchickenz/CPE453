@@ -1,17 +1,19 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <sys/types.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 typedef struct parser{
-    uint_32 partition;
-    uint_32 sector;
-    uint_32 verbose;
+    uint32_t partition;
+    uint32_t sector;
+    uint32_t verbose;
     char *imagefile;
-    char *srcpath;
+    char *srcpath; /*used for path in minls*/
     char *dstpath;
 } parser;
 
 void print_usage();
-void parse_line(struct parser);
+int parse_line(struct parser *parse, int argc, char **argv);
 
 
