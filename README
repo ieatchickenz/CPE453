@@ -1,6 +1,8 @@
 testing
 my phone numbers is 559-313-2058
 
+https://github.com/ssinghi/minix/tree/master/usr.sbin/mkfs.mfs
+
 
 git pull     -pulls latest changes changes unless (same file and different) merge conflict
 git add filename
@@ -8,8 +10,20 @@ git rm filename
 git commit -m "yourmessage here"
 git push
 
-beond compare
+use beyond compare
+
+READING ....
+3.7.4 pages 285-293
+Hard disk driver in Minix. Helpful, but, mercifully, not terribly important for this task.
+
+
+5.3   pages 489-515
+Filesystem implementation.
+
+
+5.6   pages 538-556    in particular 5.6.4
+The minix filesystem. Quite important.
 
 
 
-
+Figure 5-36 the minix inode structure
