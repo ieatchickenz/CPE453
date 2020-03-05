@@ -42,7 +42,7 @@ Options:
  * Minix Version 3 Superblock this structure found in fs/super.h in minix 3.1.1
  * on disk. These fields and orientation are non–negotiable
  */
-struct superblock {
+struct __attribute__((__packed__)) superblock {
   uint32_t ninodes;       /* number of inodes in this filesystem */
   uint16_t pad1;          /* make things line up properly */
   int16_t i_blocks;       /* # of blocks used by inode bit map */
@@ -58,7 +58,7 @@ struct superblock {
   uint8_t subversion;     /* filesystem sub–version */
 };
 
-struct inode {
+struct __attribute__((__packed__)) inode {
   uint16_t mode;          /* mode */
   uint16_t links;         /* number or links */
   uint16_t uid;
@@ -82,7 +82,7 @@ typedef struct parser{
     char *dstpath;
 } parser;
 
-typedef struct find_start{
+typedef struct finder{
     uint32_t offset;
     uint32_t fd;
 } finder;
@@ -105,7 +105,9 @@ int LBA_convert();
 /* calculates actual log zone size zonesize = blocksize << log2 zonesize */
 int logzonesize();
 
-void print_usage();
+void print_usage_ls();
+
+void print_usage_get();
 
 int parse_line_ls(struct parser *parse, int argc, char **argv);
 
