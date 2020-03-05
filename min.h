@@ -13,6 +13,11 @@ typedef struct parser{
     char *dstpath;
 } parser;
 
+typedef struct find_start{
+    uint32_t offset;
+    uint32_t fd;
+} finder;
+
 void print_usage();
 int parse_line(struct parser *parse, int argc, char **argv);
 
