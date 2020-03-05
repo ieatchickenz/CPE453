@@ -11,7 +11,7 @@
 #define SIG1LOC 510       /* first sinature location for valid partition */
 #define SIG2LOC 511       /* second sinature location for valid partition */
 #define MAGIC 0x4D5A      /* the minix magic number */
-#define MAGIC_RES 0x5A4D  /* minix magic number on a byte-reversed filesystem */
+#define MAGIC_RES 0x5A4D  /* minix magic number on a byte-reversed filesystem*/
 #define INO_SIZE 64       /* size of an inode in bytes */
 #define DIR_SIZE 64       /* size of a directory entry in bytes */
 #define DIRECT_ZONES 7    /* no fucking clue */
@@ -28,7 +28,8 @@
 #define OTHER_WRITE_PERMISSION 0000002
 #define OTHER_EXECUTE_PERMISSION 0000001
 
-
+#include "utilities.h"
+#include <getopt.h>
 /*uint32_t inode inode number
 unsigned char name[60] filename string*/
 /*char usage[] = "usage: minls [ -v ] [ -p num [ -s num ] ] imagefile [ path ]
@@ -66,11 +67,25 @@ struct inode {
   int32_t atime;
   int32_t mtime;
   int32_t ctime;
-  uint32_t zone[DIRECT ZONES];
+  uint32_t zone[DIRECT_ZONES];
   uint32_t indirect;
-  uint32_t two indirect;
+  uint32_t two_indirect;
   uint32_t unused;
 };
+
+typedef struct parser{
+    uint32_t partition;
+    uint32_t sector;
+    uint32_t verbose;
+    char *imagefile;
+    char *srcpath; /*used for path in minls*/
+    char *dstpath;
+} parser;
+
+typedef struct find_start{
+    uint32_t offset;
+    uint32_t fd;
+} finder;
 
 /* check the disk image for valid partition table(s), if partitioning is requested */
 int check_part();
@@ -90,15 +105,8 @@ int LBA_convert();
 /* calculates actual log zone size zonesize = blocksize << log2 zonesize */
 int logzonesize();
 
+void print_usage();
 
+int parse_line_ls(struct parser *parse, int argc, char **argv);
 
-
-
-
-
-
-
-
-
-
-/* */
+int parse_line_get(struct parser *parese, int argc, char **argv);
