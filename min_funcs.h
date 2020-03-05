@@ -5,6 +5,7 @@
 #define SEC_SIZE    512   /* minix sector size        */
 #define SBOFFSET 1024     /* offset to Super Block */
 #define MBR    0x1BE      /* partition table location */
+#define PTSIZE 128        /*size of the partition table is 128 bytes*/
 #define MINIX  0x81       /* minix compatable type #  */
 #define SIG1 0x55         /* first sinature for valid partition */
 #define SIG2 0xAA         /* second sinature for valid partition */
@@ -15,6 +16,7 @@
 #define INO_SIZE 64       /* size of an inode in bytes */
 #define DIR_SIZE 64       /* size of a directory entry in bytes */
 #define DIRECT_ZONES 7    /* no fucking clue */
+
 #define FILE_TYPE_MASK 0170000
 #define REGULAR_FILE 0100000
 #define DIRECTORY 0040000
@@ -72,6 +74,10 @@ struct __attribute__((__packed__)) inode {
   uint32_t two_indirect;
   uint32_t unused;
 };
+
+typedef struct __attribute__((__packed__)) partition {
+    
+}partition;
 
 typedef struct parser{
     uint32_t partition;
