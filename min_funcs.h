@@ -3,8 +3,8 @@
     Zone size: k × blocksize
     */
 #define SEC_SIZE  512      /* minix sector size        */
-#define SBOFFSET  1024     /* offset to Super Block */
-#define MBR       0x1BE    /* partition table location */
+#define SBOFFSET  1024     /* offset to Super Block or 0x400*/
+#define PARTS     0x1BE    /* partition table location */
 #define PTSIZE    128      /*size of the partition table is 128 bytes*/
 #define MINIX     0x81     /* minix compatable type #  */
 #define SIG1      0x55     /* first sinature for valid partition */
@@ -86,21 +86,18 @@ typedef struct finder{
     uint32_t fd;
 } finder;
 
+/* initialize parser structure */
+void init_parser(parser *p);
 /* check the disk image for valid partition table(s), if partitioning is requested */
-int check_part();
-
+uint32_t check_part();
 /* check for a valid Minix superblock */
 int check_SB();
-
 /* check that directories being listed really are directories */
 int check_DIR();
-
 /* check that files being copied really are regular files */
 int check_file();
-
 /* converts LBA = (c · H + h) · S + s − 1    **** not needed*/
 int LBA_convert();
-
 /* calculates actual log zone size zonesize = blocksize << log2 zonesize */
 int logzonesize();
 
@@ -108,6 +105,8 @@ void print_usage_ls();
 
 void print_usage_get();
 
-/* int parse_line_ls(struct parser *parse, int argc, char **argv); */
+int openfile(struct parser *p, int * file);
 
-/* int parse_line_get(struct parser *parese, int argc, char **argv); */
+int parse_line_ls(struct parser *parse, int argc, char **argv);
+
+int parse_line_get(struct parser *parese, int argc, char **argv);

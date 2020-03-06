@@ -1,6 +1,6 @@
 #include "min_funcs.h"
 int parse_line(struct parser *parse, int argc, char **argv);
-int openfile(struct parser *p, int * file);
+
 void print_usage(void);
 
 int main(int argc, char **argv){
@@ -8,6 +8,9 @@ int main(int argc, char **argv){
     uint32_t check;
     int file = 0;
     int testint;
+    init_parser(&p);
+
+
     if((check = parse_line(&p, argc, argv))){
         exit(1);
     }
@@ -22,6 +25,13 @@ int main(int argc, char **argv){
     testint = openfile(&p, &file);
     assert(fprintf(stderr, "%d\n", testint));
 
+    check_part(p);
+
+
+
+
+
+    close(file);
     return 0;
 }
 
@@ -93,11 +103,6 @@ int parse_line(struct parser *parse, int argc, char **argv){
 }
 
 
-int openfile(struct parser *p, int *file){
-   *file = open( (p->imagefile), O_RDONLY);
-   return *file;
-}
-
 void print_usage(){
     printf("usage: minls [-v] [-p part [-s subpart]] imagefile [path]\n");
     printf("Options:\n\t-p  part    --- select partition for filesystem");
@@ -106,3 +111,35 @@ void print_usage(){
     printf("(default: none)\n\t-h  help    --- print usage information and");
     printf(" exit\n\t-v  verbose --- increase verbosity level\n");
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* end */

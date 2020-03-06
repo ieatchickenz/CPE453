@@ -31,3 +31,10 @@ The minix filesystem. Quite important.
 
 
 Figure 5-36 the minix inode structure
+
+
+
+MBR is different from Boot block in the manner that a Master boot block is the
+only one located at the very front of the "disk"
+MBR and BOOT BLOCK are both 1024
+MBR hold four slots of size ??? at very end to specify partitions
