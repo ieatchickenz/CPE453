@@ -1,20 +1,28 @@
-#include "min.h" 
+#include "min_funcs.h"
+int parse_line(struct parser *parse, int argc, char **argv);
+int openfile(struct parser *p, int * file);
+void print_usage(void);
 
-void main(int argc, char **argv){
+int main(int argc, char **argv){
     struct parser p;
     uint32_t check;
-    
-    if((check=parse_line(&p, argc, argv))){
+    int file = 0;
+    int testint;
+    if((check = parse_line(&p, argc, argv))){
         exit(1);
     }
-    
-    printf("args:%d\nv count: %d\np: %d\ns: %d\n", argc,p.verbose, p.partition, 
-            p.sector);
+
+    printf("args:%d\nv count: %d\np: %d\ns: %d\n",
+            argc, p.verbose, p.partition, p.sector);
     printf("imagefile: %s\n", p.imagefile);
     if(p.srcpath){
         printf("optional path: %s\n", p.srcpath);
-    }   
+    }
 
+    testint = openfile(&p, &file);
+    assert(fprintf(stderr, "%d\n", testint));
+
+    return 0;
 }
 
 int parse_line(struct parser *parse, int argc, char **argv){
@@ -23,11 +31,11 @@ int parse_line(struct parser *parse, int argc, char **argv){
     extern char *optarg;
     extern int optind;
 
-    while((c=getopt(argc, argv, "hvp:s:")) != -1){
+    while((c = getopt(argc, argv, "hvp:s:")) != -1){
         switch(c){
             case 'v':
                 parse->verbose += 1;
-                break; 
+                break;
             case 'p':
                 if(parse->partition){ /*can't have more than one*/
                     print_usage();
@@ -69,9 +77,9 @@ int parse_line(struct parser *parse, int argc, char **argv){
     }
 
     if(argc >= optind){
-       parse->srcpath = argv[optind++]; 
+       parse->srcpath = argv[optind++];
     }
-    /* this part is exclusively for minget
+    /*this part is exclusively for minget
     if(argc >= optind){
         parse->dstpath = argv[optind];
     }*/
@@ -85,11 +93,16 @@ int parse_line(struct parser *parse, int argc, char **argv){
 }
 
 
+int openfile(struct parser *p, int *file){
+   *file = open( (p->imagefile), O_RDONLY);
+   return *file;
+}
+
 void print_usage(){
     printf("usage: minls [-v] [-p part [-s subpart]] imagefile [path]\n");
     printf("Options:\n\t-p  part    --- select partition for filesystem");
     printf("(default");
-    printf(": none)\n\t-s  sub     --- select subpartition for filesystem"); 
+    printf(": none)\n\t-s  sub     --- select subpartition for filesystem");
     printf("(default: none)\n\t-h  help    --- print usage information and");
     printf(" exit\n\t-v  verbose --- increase verbosity level\n");
 }

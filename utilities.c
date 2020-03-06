@@ -89,7 +89,7 @@ int print_spaces(int i){
 void mem_off_wrt(char *strg, int offset, const char *insert){
    assert(fprintf(stderr, "mem_off_wrt()\n"));
    //assert(fprintf(stderr, "\"%s\" and \"%s\"\n", strg, insert));
-   for(int i=offset; i<(strlen(insert)+offset); i++)
+   for(unsigned int i = offset; i<(strlen(insert)+offset); i++)
       strg[i] = insert[i-offset];
 }
 

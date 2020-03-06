@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <math.h>
 #include <sys/wait.h>
+#include <getopt.h>
 void  exit_util(const char *failure_name); /*, __FILE__, __LINE__*/
 void *safe_malloc(size_t size, char *sender, size_t extra);
 void *safe_realloc(void *ptr, size_t new_size, char *sender, size_t extra);

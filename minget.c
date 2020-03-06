@@ -1,21 +1,23 @@
-#include "min.h" 
+#include "min_funcs.h"
+int parse_line(struct parser *parse, int argc, char **argv);
+void print_usage();
 
-void main(int argc, char **argv){
+int main(int argc, char **argv){
     struct parser p;
     uint32_t check;
-    
+
     if((check=parse_line(&p, argc, argv))){
         exit(1);
     }
-    
-    printf("args:%d\nv count: %d\np: %d\ns: %d\n", argc,p.verbose, p.partition, 
+
+    printf("args:%d\nv count: %d\np: %d\ns: %d\n", argc,p.verbose, p.partition,
             p.sector);
     printf("imagefile: %s\n", p.imagefile);
     printf("srcfile: %s\n", p.srcpath);
     if(p.dstpath){
         printf("dstpath: %s\n", p.dstpath);
-    }   
-
+    }
+    return 0;
 }
 
 int parse_line(struct parser *parse, int argc, char **argv){
@@ -28,7 +30,7 @@ int parse_line(struct parser *parse, int argc, char **argv){
         switch(c){
             case 'v':
                 parse->verbose += 1;
-                break; 
+                break;
             case 'p':
                 if(parse->partition){   /*can't have more than one*/
                     print_usage();
@@ -65,7 +67,7 @@ int parse_line(struct parser *parse, int argc, char **argv){
     }
 
     if(argc >= optind){
-       parse->srcpath = argv[optind++]; 
+       parse->srcpath = argv[optind++];
     }
 
     if(argc >= optind){

@@ -5,7 +5,7 @@ mt (alex) phone number is 602-315-4804
 =======
 
 https://github.com/ssinghi/minix/tree/master/usr.sbin/mkfs.mfs
-
+Git status: orange for modified, green for new, red for deleted.
 >>>>>>> testing
 
 git pull     -pulls latest changes changes unless (same file and different) merge conflict
