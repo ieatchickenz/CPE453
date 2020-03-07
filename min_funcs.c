@@ -1,5 +1,5 @@
 #include "min_funcs.h"
-
+/*need to add comment*/
 void init_parser(parser *p){
    p->partition = -1;
    p->sector    = -1;
