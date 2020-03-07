@@ -95,8 +95,8 @@ typedef struct __attribute__((__packed__)) part_table {
 } part_table;
 
 typedef struct parser {
-    uint32_t partition;
-    uint32_t sector;
+    int32_t partition;
+    int32_t sector;
     uint32_t verbose;
     char    *imagefile;
     char    *srcpath; /*used for path in minls*/
@@ -104,7 +104,7 @@ typedef struct parser {
 } parser;
 
 typedef struct finder{
-    uint32_t offset;
+    off_t offset;
     uint32_t fd;
 } finder;
 
@@ -112,6 +112,8 @@ typedef struct finder{
 void init_parser(parser *p);
 /* check the disk image for valid partition table(s), if partitioning is requested */
 uint32_t check_part(parser *p, int file, part_table *part);
+/*find the new offset*/
+off_t find_offset(int32_t which, struct part_table *part)
 /* check for a valid Minix superblock */
 int check_SB();
 /* check that directories being listed really are directories */
@@ -127,7 +129,7 @@ void print_usage_ls();
 
 void print_usage_get();
 
-int openfile(struct parser *p, int * file);
+void openfile(struct parser *p, struct finder *f);
 
 int parse_line_ls(struct parser *parse, int argc, char **argv);
 
