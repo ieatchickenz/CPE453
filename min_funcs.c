@@ -23,7 +23,8 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
    uint32_t file = f->fd;
    
    /*checking validity of partition table first*/
-   if(-1 == lseek(file, offset, SEEK_SET)){  /*first seek to the boot block you're interested in*/
+   if(-1 == lseek(file, offset, SEEK_SET)){
+       /*first seek to the boot block you're interested in*/
        perror("lseek");
        return 1;
    }
@@ -33,7 +34,7 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
        return 1;
    }
    /*next fill an array with the bytes we're interested in and check*/
-   if(-1 == read(file, check_bytes, 2){
+   if(-1 == read(file, check_bytes, 2)){
       perror("read");
       return 1;
    }
@@ -55,7 +56,8 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
       return 1;
    }
 
-   if(-1 == read(file, part, sizeof(struct part_table))){ /*fill the part_table struct*/
+   if(-1 == read(file, part, sizeof(struct part_table))){ 
+       /*fill the part_table struct*/
       perror("read");
       return 1;
    }
@@ -64,9 +66,10 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
    if((offset = find_offset(which, part)) == -1){
        return 1;
    }
-   f->offset = offset; /*set the new offset so we can now use this for partition and subpartition*/
+   f->offset = offset; 
+   /*set the new offset so we can now use this for partition and subpartition*/
    
-  /*-----------------------------------------this is where I modified up to------------------------------*/ 
+  /*--------------------this is where I modified up to-----------------------*/ 
    
    /*
    part->entry[p->partition].last_head = 'B'; for testing
@@ -86,7 +89,8 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
 
 off_t find_offset(int32_t which, struct part_table *part){
     off_t offset;
-    if(part->entry[which].type != MINIX){ /*check if it's a MINIX style partition*/
+    if(part->entry[which].type != MINIX){ 
+        /*check if it's a MINIX style partition*/
         fprintf(stderr, "This is not a valid MINIX partition.\n");
         return -1;
     }
@@ -290,7 +294,8 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
         return 1;
     }
 
-    if(parse->sector != -1 && parse->partition == -1){ /*can not have subpartition with no partition*/
+    if(parse->sector != -1 && parse->partition == -1){
+         /*can not have subpartition with no partition*/
         print_usage_get();
         return 1;
     }
@@ -301,10 +306,12 @@ void openfile(struct parser *p, struct finder *f){
    f->fd = open((p->imagefile), O_RDONLY); /*open returns an int*/
 }
 
-void verbose1(parser *p, finder *f, part_table *part){/*in main put switch statement that decides which verbose to run*/
+void verbose1(parser *p, finder *f, part_table *part){
+    /*in main put switch statement that decides which verbose to run*/
     /*this verbose is reserved for superblocks and inode*/
 }
 
 void verbose2(parser *p, finder *f, part_table *part){
-    /*this verbose is reserved for verbose1, and the parsing, finder and part_table structs*/
+    /*this verbose is reserved for verbose1, and the 
+     * parsing, finder and part_table structs*/
 }

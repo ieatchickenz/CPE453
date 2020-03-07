@@ -12,7 +12,7 @@
 #define SIG1LOC   510      /* first sinature location for valid partition */
 #define SIG2LOC   511      /* second sinature location for valid partition */
 #define MAGIC     0x4D5A   /* the minix magic number */
-#define MAGIC_RES 0x5A4D   /* minix magic number on a byte-reversed filesystem*/
+#define MAGIC_RES 0x5A4D   /* minix magic number on byte-reversed filesystem*/
 #define INO_SIZE  64       /* size of an inode in bytes */
 #define DIR_SIZE  64       /* size of a directory entry in bytes */
 #define DIRECT_ZONES 7     /* no fucking clue */
@@ -110,7 +110,7 @@ typedef struct finder{
 
 /* initialize parser structure */
 void init_parser(parser *p);
-/* check the disk image for valid partition table(s), if partitioning is requested */
+/* check the disk image for valid partition table(s), if requested */
 uint32_t check_part(parser *p, int file, part_table *part);
 /*find the new offset*/
 off_t find_offset(int32_t which, struct part_table *part)
