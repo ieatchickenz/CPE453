@@ -1,5 +1,5 @@
 #include "min_funcs.h"
-/*need to add comment*/
+
 void init_parser(parser *p){
    p->partition = -1;
    p->sector    = -1;
@@ -345,14 +345,14 @@ void verbose2(parser *p, finder *f, part_table *part){
 
     for(i=0;i<4;i++){
         printf("Entry [%d]:\n", i);
-        printf("Boot Ind%d\n", part[i].bootind);
-        printf("Start (Head, Sec, Cyl): %d, %d, %d\n",
+        printf("\tBoot Ind%d\n", part[i].bootind);
+        printf("\tStart (Head, Sec, Cyl): %d, %d, %d\n",
                 part[i].start_head, part[i].start_sec, part[i].start_cyl);
-        printf("Sys Ind%d\n", part[i].sysind);
-        printf("Last (Head, Sec, Cyl): %d, %d, %d\n",
+        printf("\tSys Ind%d\n", part[i].sysind);
+        printf("\tLast (Head, Sec, Cyl): %d, %d, %d\n",
                 part[i].last_head, part[i].last_sec, part[i].last_cyl);
-        printf("Firt Sector%d\n", part[i].lowsec);
-        printf("Size%d\n", part[i].size);
+        printf("\tFirt Sector%d\n", part[i].lowsec);
+        printf("\tSize%d\n", part[i].size);
 
         printf("\n\n");
     }
