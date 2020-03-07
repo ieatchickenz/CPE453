@@ -1,10 +1,61 @@
 #include "min_funcs.h"
 
-
 void init_parser(parser *p){
    p->partition = 0;
    p->sector    = 0;
    p->verbose   = 0;
+}
+/* off_t lseek(int fd, off_t offset, int whence); */
+/* ssize_t read(int fd, void *buf, size_t count); */
+/* valid partition table contains a signature:
+   0x55 in byte 510, and 0xAA in byte 511 */
+void init_parser(parser *p);
+uint32_t check_part(parser *p, int file, part_table *part){
+   intptr_t offset, test;
+   char first, second;
+   if(-1 == lseek(file, SIG1LOC, SEEK_SET)){
+      perror("lseek");
+      return 0;
+   }
+
+   if(-1 == read(file, &first, sizeof(char))){
+      perror("lseek");
+      return 0;
+   }
+   if(-1 == read(file, &second, sizeof(char))){
+      perror("lseek");
+      return 0;
+   }
+   assert(fprintf(stderr, "%d and & %d this code is not working I think\n",first, second ));
+   // part->entry[p->partition].last_head = 'B'; /* for testing*/
+   //
+   // offset = (intptr_t)(&(part->entry[p->partition]));
+   // test = offset + 510;
+   // if ( (int)(*((&(part->entry[p->partition]))+(510))) != 0x55 ||
+   //     (part->entry[p->partition])[511] != 0xAA) {
+   //    /* Invalid partition table. */
+   //    return 0;
+   // }
+
+   /*assert(fprintf(stderr, "%s\n", ));*/
+
+
+   return 0;
+}
+int check_SB(){
+   return 0;
+}
+int check_DIR(){
+   return 0;
+}
+int check_file(){
+   return 0;
+}
+int LBA_convert(){
+   return 0;
+}
+int logzonesize(){
+   return 0;
 }
 
 int parse_line_ls(struct parser *parse, int argc, char **argv){

@@ -4,7 +4,8 @@ int parse_line(struct parser *parse, int argc, char **argv);
 void print_usage(void);
 
 int main(int argc, char **argv){
-    struct parser p;
+    parser p;
+    part_table t;
     uint32_t check;
     int file = 0;
     int testint;
@@ -16,7 +17,7 @@ int main(int argc, char **argv){
     }
 
     printf("args:%d\nv count: %d\np: %d\ns: %d\n",
-            argc, p.verbose, p.partition, p.sector);
+               argc, p.verbose, p.partition, p.sector);
     printf("imagefile: %s\n", p.imagefile);
     if(p.srcpath){
         printf("optional path: %s\n", p.srcpath);
@@ -25,7 +26,7 @@ int main(int argc, char **argv){
     testint = openfile(&p, &file);
     assert(fprintf(stderr, "%d\n", testint));
 
-    check_part(p);
+    check_part(&p, file, &t);
 
 
 

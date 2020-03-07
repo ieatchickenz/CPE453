@@ -17,6 +17,15 @@
 #define DIR_SIZE  64       /* size of a directory entry in bytes */
 #define DIRECT_ZONES 7     /* no fucking clue */
 
+/* from /usr/include/i386/partition.h */
+#define ACTIVE_FLAG	0x80	/* value for active in bootind field (hd0) */
+#define NR_PARTITIONS	4	/* number of entries in partition table */
+#define	PART_TABLE_OFF	0x1BE	/* offset of partition table in boot sector */
+
+/* Partition types. */
+#define NO_PART		0x00	/* unused entry */
+#define MINIX_PART	0x81	/* Minix partition type */
+
 #define F_TYPE_MASK  0170000
 #define REG_FILE     0100000
 #define DIRECTORY    0040000
@@ -37,7 +46,7 @@ unsigned char name[60] filename string*/
 
 /* Minix Version 3 Superblock this structure found in fs/super.h in minix
  * 3.1.1 on disk. These fields and orientation are non–negotiable */
-struct __attribute__((__packed__)) superblock {
+typedef struct __attribute__((__packed__)) superblock {
   uint32_t ninodes;       /* number of inodes in this filesystem */
   uint16_t pad1;          /* make things line up properly */
   int16_t i_blocks;       /* # of blocks used by inode bit map */
@@ -51,9 +60,9 @@ struct __attribute__((__packed__)) superblock {
   int16_t pad3;           /* make things line up again */
   uint16_t blocksize;     /* block size in bytes */
   uint8_t subversion;     /* filesystem sub–version */
-};
+} superblock;
 
-struct __attribute__((__packed__)) inode {
+typedef struct __attribute__((__packed__)) inode {
   uint16_t mode;          /* mode */
   uint16_t links;         /* number or links */
   uint16_t uid;
@@ -66,13 +75,26 @@ struct __attribute__((__packed__)) inode {
   uint32_t indirect;
   uint32_t two_indirect;
   uint32_t unused;
-};
+} inode;
 
-typedef struct __attribute__((__packed__)) partition {
-   int dummy_value;
-}partition;
+typedef struct __attribute__((__packed__)) part_entry {
+  unsigned char bootind;      /* boot indicator 0/ACTIVE_FLAG	 */
+  unsigned char start_head;   /* head value for first sector	 */
+  unsigned char start_sec;	   /* sector value + cyl bits for first sector */
+  unsigned char start_cyl;	   /* track value for first sector	 */
+  unsigned char sysind;       /* system indicator		 */
+  unsigned char last_head;    /* head value for last sector	 */
+  unsigned char last_sec;     /* sector value + cyl bits for last sector */
+  unsigned char last_cyl;     /* track value for last sector	 */
+  unsigned long lowsec;       /* logical first sector		 */
+  unsigned long size;         /* size of partition in sectors	 */
+} part_entry;
 
-typedef struct parser{
+typedef struct __attribute__((__packed__)) part_table {
+   part_entry entry[4];
+} part_table;
+
+typedef struct parser {
     uint32_t partition;
     uint32_t sector;
     uint32_t verbose;
@@ -89,7 +111,7 @@ typedef struct finder{
 /* initialize parser structure */
 void init_parser(parser *p);
 /* check the disk image for valid partition table(s), if partitioning is requested */
-uint32_t check_part();
+uint32_t check_part(parser *p, int file, part_table *part);
 /* check for a valid Minix superblock */
 int check_SB();
 /* check that directories being listed really are directories */
