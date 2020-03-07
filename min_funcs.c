@@ -1,36 +1,77 @@
 #include "min_funcs.h"
 
 void init_parser(parser *p){
-   p->partition = 0;
-   p->sector    = 0;
+   p->partition = -1;
+   p->sector    = -1;
    p->verbose   = 0;
+}
+
+void init_finder(finder *f){
+    f->offset = 0;
+    f->fd = 0;
 }
 /* off_t lseek(int fd, off_t offset, int whence); */
 /* ssize_t read(int fd, void *buf, size_t count); */
 /* valid partition table contains a signature:
    0x55 in byte 510, and 0xAA in byte 511 */
-void init_parser(parser *p);
-uint32_t check_part(parser *p, int file, part_table *part){
-   intptr_t offset, test;
-   char first, second;
-   if(-1 == lseek(file, SIG1LOC, SEEK_SET)){
+   
+uint32_t check_part(int32_t which, finder *f, part_table *part){ 
+   /*returns 0 on success and 1 on failure*/
+
+   uint8_t check_bytes[2];
+   off_t offset = f->offset;
+   uint32_t file = f->fd;
+   
+   /*checking validity of partition table first*/
+   if(-1 == lseek(file, offset, SEEK_SET)){  /*first seek to the boot block you're interested in*/
+       perror("lseek");
+       return 1;
+   }
+   
+   if(-1 == lseek(file, SIG1LOC, SEEK_CUR)){  /*next seek to byte 510*/
+       perror("lseek");
+       return 1;
+   }
+   /*next fill an array with the bytes we're interested in and check*/
+   if(-1 == read(file, check_bytes, 2){
+      perror("read");
+      return 1;
+   }
+   
+   /*do the actual check*/
+   if(check_bytes[0] != SIG1 || check_bytes[1] != SIG2){
+       fprintf(stderr, "This is not a valid partition table");
+       return 1;
+   }
+   
+   /*after checking for validity, fill the part_table*/
+   if(-1 == lseek(file, offset, SEEK_SET)){  /*relocate the boot block we want*/
       perror("lseek");
-      return 0;
+      return 1;
+   }
+   
+   if(-1 == lseek(file, PARTS, SEEK_CUR)){ /*now find the start of the tables*/
+      perror("lseek");
+      return 1;
    }
 
-   if(-1 == read(file, &first, sizeof(char))){
-      perror("lseek");
-      return 0;
+   if(-1 == read(file, part, sizeof(struct part_table))){ /*fill the part_table struct*/
+      perror("read");
+      return 1;
    }
-   if(-1 == read(file, &second, sizeof(char))){
-      perror("lseek");
-      return 0;
+   
+   /*here we need to find the new offset*/
+   if((offset = find_offset(which, part)) == -1){
+       return 1;
    }
-   assert(fprintf(stderr, "%d and & %d this code is not working I think\n",first, second ));
-   // part->entry[p->partition].last_head = 'B'; /* for testing*/
-   //
-   // offset = (intptr_t)(&(part->entry[p->partition]));
-   // test = offset + 510;
+   f->offset = offset; /*set the new offset so we can now use this for partition and subpartition*/
+   
+  /*-----------------------------------------this is where I modified up to------------------------------*/ 
+   
+   /*
+   part->entry[p->partition].last_head = 'B'; for testing
+   offset = (intptr_t)(&(part->entry[p->partition]));
+   test = offset + 510;*/
    // if ( (int)(*((&(part->entry[p->partition]))+(510))) != 0x55 ||
    //     (part->entry[p->partition])[511] != 0xAA) {
    //    /* Invalid partition table. */
@@ -42,6 +83,41 @@ uint32_t check_part(parser *p, int file, part_table *part){
 
    return 0;
 }
+
+off_t find_offset(int32_t which, struct part_table *part){
+    off_t offset;
+    if(part->entry[which].type != MINIX){ /*check if it's a MINIX style partition*/
+        fprintf(stderr, "This is not a valid MINIX partition.\n");
+        return -1;
+    }
+    
+    offset = (part->entry[which].lowsec) * 512;
+    return offset;
+}
+
+uint32_t find_filesystem(parser *p, finder *f, part_table *part){
+    /* returns 0 on success and 1 on failure*/
+    uint32_t check;
+    
+    if(p->partition != -1 && p->partition < 4){
+        if(check = check_part(p->partition, f, part){
+            return 1;
+        }
+        
+        if(p->sector != -1 && p->sector < 4){
+            if(check = check_part(p->sector, f, part){
+                return 1;
+            }       
+        }
+        else{
+            fprintf(stderr, "Valid partition is only 0-3\n");    
+        }
+    }
+    else{
+        fprintf(stderr, "Valid partition is only 0-3\n");
+    }
+}
+
 int check_SB(){
    return 0;
 }
@@ -122,7 +198,11 @@ int parse_line_ls(struct parser *parse, int argc, char **argv){
         print_usage_ls();
         return 1;
     }
-
+    
+    if(parse->sector != -1 && parse->partition == -1){
+        print_usage_ls();
+        return 1;
+    }
     return 0;
 }
 
@@ -210,10 +290,21 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
         return 1;
     }
 
+    if(parse->sector != -1 && parse->partition == -1){ /*can not have subpartition with no partition*/
+        print_usage_get();
+        return 1;
+    }
     return 0;
 }
 
-int openfile(struct parser *p, int *file){
-   *file = open( (p->imagefile), O_RDONLY);
-   return *file;
+void openfile(struct parser *p, struct finder *f){
+   f->fd = open((p->imagefile), O_RDONLY); /*open returns an int*/
+}
+
+void verbose1(parser *p, finder *f, part_table *part){/*in main put switch statement that decides which verbose to run*/
+    /*this verbose is reserved for superblocks and inode*/
+}
+
+void verbose2(parser *p, finder *f, part_table *part){
+    /*this verbose is reserved for verbose1, and the parsing, finder and part_table structs*/
 }
