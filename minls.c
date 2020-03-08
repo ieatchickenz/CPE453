@@ -15,7 +15,9 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    find_filesystem(&p, &f, &t);
+    if(check = find_filesystem(&p, &f, &t)){
+        return 1;
+    }
 
     if(p.verbose){
         verbose2(&p, &f, &t);

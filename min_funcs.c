@@ -55,7 +55,8 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
       return 1;
    }
 
-   if(-1 == read(file, part, sizeof(struct part_table))){ /*fill the part_table struct*/
+   if(-1 == read(file, part, sizeof(struct part_table))){
+      /*fill the part_table struct*/
       perror("read");
       return 1;
    }
@@ -91,12 +92,12 @@ uint32_t find_filesystem(parser *p, finder *f, part_table *part){
       return 1;
     }
 
-    if(p->partition > 0 && p->partition < 4){
+    if(p->partition >= 0 && p->partition < 4){
         if( (check = check_part(p->partition, f, part)) ){
             return 1;
         }
 
-        if(p->sector > 0 && p->sector < 4){
+        if(p->sector >= 0 && p->sector < 4){
             if( (check = check_part(p->sector, f, part)) ){
                 return 1;
             }
@@ -145,12 +146,12 @@ int parse_line_ls(struct parser *parse, int argc, char **argv){
     extern int optind;
 
     while((c=getopt(argc, argv, "hvp:s:")) != -1){
-        switch(c){
+       switch(c){
             case 'v':
                 parse->verbose += 1;
                 break;
             case 'p':
-                if(parse->partition){ /*can't have more than one*/
+                if(parse->partition >= 0){ /*can't have more than one*/
                     print_usage_ls();
                     return 1;
                 }
@@ -162,7 +163,7 @@ int parse_line_ls(struct parser *parse, int argc, char **argv){
                 break;
 
             case 's':
-                if(parse->sector){  /*can't have more than one*/
+                if(parse->sector >= 0){  /*can't have more than one*/
                     print_usage_ls();
                     return 1;
                 }
@@ -235,13 +236,13 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
     extern char *optarg;
     extern int optind;
 
-    while((c=getopt(argc, argv, "vp:s:")) != -1){
+    while((c=getopt(argc, argv, "hvp:s:")) != -1){
         switch(c){
             case 'v':
                 parse->verbose += 1;
                 break;
             case 'p':
-                if(parse->partition){   /*can't have more than one*/
+                if(parse->partition >= 0){   /*can't have more than one*/
                     print_usage_get();
                     return 1;
                 }
@@ -253,7 +254,7 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
                 break;
 
             case 's':      /*can't have more than one*/
-                if(parse->sector){
+                if(parse->sector >= 0){
                     print_usage_get();
                     return 1;
                 }
@@ -262,6 +263,10 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
                     print_usage_get();
                     return 1;
                 }
+                break;
+
+            case 'h':
+                print_usage_get();
                 break;
 
             default:
@@ -304,7 +309,7 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
 int32_t openfile(struct parser *p, struct finder *f){
    if( -1 == (f->fd = open((p->imagefile), O_RDONLY))){
       perror("open");
-      return f->fd;
+      return -1;
    } /*open returns an int*/
    return 0; /*****************************************************CHECK THIS*********************not shure*/
 }
@@ -335,14 +340,15 @@ void verbose2(parser *p, finder *f, part_table *part){
 
     for(i=0;i<4;i++){
         printf("Entry [%d]:\n", i);
-        printf("\tBoot Ind%d\n", part->entry[i].bootind);
+        printf("\tBoot Ind: %d\n", part->entry[i].bootind);
         printf("\tStart (Head, Sec, Cyl): %d, %d, %d\n",
-                part->entry[i].start_head, part->entry[i].start_sec, part->entry[i].start_cyl);
-        printf("\tSys Ind%d\n", part->entry[i].sysind);
+                part->entry[i].start_head,
+                part->entry[i].start_sec, part->entry[i].start_cyl);
+        printf("\tSys Ind: %X\n", part->entry[i].sysind);
         printf("\tLast (Head, Sec, Cyl): %d, %d, %d\n",
                 part->entry[i].last_head, part->entry[i].last_sec, part->entry[i].last_cyl);
-        printf("\tFirt Sector %lu\n", part->entry[i].lowsec);
-        printf("\tSize %lu\n", part->entry[i].size);
+        printf("\tFirt Sector: %d\n", part->entry[i].lowsec);
+        printf("\tSize: %d\n", part->entry[i].size);
 
         printf("\n\n");
     }
