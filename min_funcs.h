@@ -5,7 +5,7 @@
 #define SEC_SIZE  512      /* minix sector size        */
 #define SBOFFSET  1024     /* offset to Super Block or 0x400*/
 #define PARTS     0x1BE    /* partition table location */
-#define PTSIZE    128      /*size of the partition table is 128 bytes*/
+#define PTSIZE    128      /* size of the partition table is 128 bytes*/
 #define MINIX     0x81     /* minix compatable type #  */
 #define SIG1      0x55     /* first sinature for valid partition */
 #define SIG2      0xAA     /* second sinature for valid partition */
@@ -62,9 +62,9 @@ typedef struct __attribute__((__packed__)) superblock {
   uint8_t subversion;     /* filesystem sub–version */
 } superblock;
 
-typedef struct __attribute__((__packed__)) inode {
-  uint16_t mode;          /* mode */
-  uint16_t links;         /* number or links */
+typedef struct __attribute__((__packed__)) inode_minix {
+  uint16_t mode;
+  uint16_t links;
   uint16_t uid;
   uint16_t gid;
   uint32_t size;
@@ -75,7 +75,7 @@ typedef struct __attribute__((__packed__)) inode {
   uint32_t indirect;
   uint32_t two_indirect;
   uint32_t unused;
-} inode;
+} inode_minix;
 
 typedef struct __attribute__((__packed__)) part_entry {
   unsigned char bootind;      /* boot indicator 0/ACTIVE_FLAG	 */
@@ -105,15 +105,19 @@ typedef struct parser {
 
 typedef struct finder{
     off_t offset;
-    uint32_t fd;
+    int32_t fd;
 } finder;
 
 /* initialize parser structure */
 void init_parser(parser *p);
+/* MISSING EXPLANATION */
+void init_finder(finder *f);
 /* check the disk image for valid partition table(s), if requested */
-uint32_t check_part(parser *p, int file, part_table *part);
+uint32_t check_part(int32_t which, finder *f, part_table *part);
 /*find the new offset*/
-off_t find_offset(int32_t which, struct part_table *part)
+off_t find_offset(int32_t which, struct part_table *part);
+/* MISSING EXPLANATION */
+uint32_t find_filesystem(parser *p, finder *f, part_table *part);
 /* check for a valid Minix superblock */
 int check_SB();
 /* check that directories being listed really are directories */
@@ -124,13 +128,48 @@ int check_file();
 int LBA_convert();
 /* calculates actual log zone size zonesize = blocksize << log2 zonesize */
 int logzonesize();
-
+/* given incorrect input format minls, prints usage */
 void print_usage_ls();
-
+/* given incorrect input format minget, prints usage */
 void print_usage_get();
-
-void openfile(struct parser *p, struct finder *f);
-
+/* opens file for read only and fills struct with appropriat info */
+int32_t openfile(struct parser *p, struct finder *f);
+/* specifit parsing functionality for minls */
 int parse_line_ls(struct parser *parse, int argc, char **argv);
-
+/* specifit parsing functionality for minget */
 int parse_line_get(struct parser *parese, int argc, char **argv);
+/*in main put switch statement that decides which verbose to run*/
+/*this verbose is reserved for superblocks and inode*/
+void verbose1();
+/*reserved for verbose1, and the parsing, finder and part_table structs*/
+void verbose2(parser *p, finder *f, part_table *part);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* end */

@@ -1,11 +1,11 @@
-CC = gcc -Wall -pedantic -Wextra -g
+CC = gcc -g -std=c99
 
-CC_FLAGS = -c
-
+CC_FLAGS = -c -Wall -pedantic -Wextra
+#-Wall -pedantic -Wextra
 all: minls
 #minget
 
-#diag: minls_diag minget_diag #for now these arent different
+diag: minls_diag minget_diag #for diagnostic print
 # minls_diag: minls.o minls.c #for now these arent different
 # 	$(CC) -o minls minls.o
 # minget_diag: minget.o minget.c #for now these arent different
@@ -23,7 +23,10 @@ minget.o: minget.c
 
 utilities.o: utilities.c utilities.h
 	$(CC) $(CC_FLAGS) -c -o utilities.o utilities.c
+<<<<<<< HEAD
 
+=======
+>>>>>>> fd8c888f5d6ba47164d5379e968114b24cf99640
 
 min_funcs.o: min_funcs.o min_funcs.c
 	$(CC) $(CC_FLAGS) -o min_funcs.o min_funcs.c
