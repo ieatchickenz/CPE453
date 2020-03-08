@@ -21,9 +21,18 @@ int main(int argc, char **argv)
     }
 
     check_SB(&f, &s);
+    
+    switch(p.verbose){
+        case(1):
+            verbose1(&s);
+            break;
 
-    if(p.verbose){
-        verbose2(&p, &f, &t, &s);
+        case(2):
+            verbose2(&p, &f, &t, &s);
+            break;
+
+        default:
+            break;
     }
 
     close(file);
