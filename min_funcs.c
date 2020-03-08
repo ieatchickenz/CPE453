@@ -13,10 +13,6 @@ void init_finder(finder *f){
     f->offset = 0;
     f->fd = 0;
 }
-/* off_t lseek(int fd, off_t offset, int whence); */
-/* ssize_t read(int fd, void *buf, size_t count); */
-/* valid partition table contains a signature:
-   0x55 in byte 510, and 0xAA in byte 511 */
 
 uint32_t check_part(int32_t which, finder *f, part_table *part){
    /*returns 0 on success and 1 on failure*/
@@ -46,7 +42,8 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
        fprintf(stderr, "This is not a valid partition table");
        return 1;
    }
-
+   assert(fprintf(stderr, "partition signatures are %02X and %02X\n",
+                           check_bytes[0] , check_bytes[1]));
    /*after checking for validity, fill the part_table*/
    if(-1 == lseek(file, offset, SEEK_SET)){  /*relocate the boot block we want*/
       perror("lseek");
@@ -67,21 +64,8 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
    if((offset = find_offset(which, part)) == -1){
        return 1;
    }
-   f->offset = offset; /*set the new offset so we can now use this for partition and subpartition*/
-
-  /*-----------------------------------------this is where I modified up to------------------------------*/
-
-   /*
-   part->entry[p->partition].last_head = 'B'; for testing
-   offset = (intptr_t)(&(part->entry[p->partition]));
-   test = offset + 510;*/
-   // if ( (int)(*((&(part->entry[p->partition]))+(510))) != 0x55 ||
-   //     (part->entry[p->partition])[511] != 0xAA) {
-   //    /* Invalid partition table. */
-   //    return 0;
-   // }
-
-   /*assert(fprintf(stderr, "%s\n", ));*/
+   f->offset = offset;
+   /*set the new offset so we can now use this for partition and subpartition*/
 
 
    return 0;
@@ -89,7 +73,8 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
 
 off_t find_offset(int32_t which, struct part_table *part){
     off_t offset;
-    if(part->entry[which].type != MINIX){ /*check if it's a MINIX style partition*/
+    /*check if it's a MINIX style partition*/
+    if(part->entry[which].sysind != MINIX){
         fprintf(stderr, "This is not a valid MINIX partition.\n");
         return -1;
     }
@@ -100,19 +85,19 @@ off_t find_offset(int32_t which, struct part_table *part){
 
 uint32_t find_filesystem(parser *p, finder *f, part_table *part){
     /* returns 0 on success and 1 on failure*/
-    uint32_t check = 0;
+    int32_t check = 0;
 
-    if((check = openfile(p, f)) == -1){
+    if( -1 == (check = openfile(p, f)) ){
       return 1;
     }
 
     if(p->partition > 0 && p->partition < 4){
-        if(check = check_part(p->partition, f, part){
+        if( (check = check_part(p->partition, f, part)) ){
             return 1;
         }
 
         if(p->sector > 0 && p->sector < 4){
-            if(check = check_part(p->sector, f, part){
+            if( (check = check_part(p->sector, f, part)) ){
                 return 1;
             }
         }
@@ -136,15 +121,19 @@ uint32_t find_filesystem(parser *p, finder *f, part_table *part){
 int check_SB(){
    return 0;
 }
+
 int check_DIR(){
    return 0;
 }
+
 int check_file(){
    return 0;
 }
+
 int LBA_convert(){
    return 0;
 }
+
 int logzonesize(){
    return 0;
 }
@@ -313,18 +302,19 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
 }
 
 int32_t openfile(struct parser *p, struct finder *f){
-   if((f->fd = open((p->imagefile), O_RDONLY)) == -1){
+   if( -1 == (f->fd = open((p->imagefile), O_RDONLY))){
       perror("open");
       return f->fd;
    } /*open returns an int*/
+   return 0; /*****************************************************CHECK THIS*********************not shure*/
 }
 
-void verbose1(){/*in main put switch statement that decides which verbose to run*/
-    /*this verbose is reserved for superblocks and inode*/
+void verbose1(){
+
 }
 
 void verbose2(parser *p, finder *f, part_table *part){
-    /*this verbose is reserved for verbose1, and the parsing, finder and part_table structs*/
+
     int i;
     verbose1();
     printf("Parser:\n");
@@ -338,23 +328,46 @@ void verbose2(parser *p, finder *f, part_table *part){
     printf("\n");
 
     printf("Finder:\n");
-    printf("\tOffset: %d\n", f->offset);
+    printf("\tOffset: %ld\n", f->offset);
     printf("\tFile Descriptor: %d\n", f->fd);
 
     printf("\n");
 
     for(i=0;i<4;i++){
         printf("Entry [%d]:\n", i);
-        printf("\tBoot Ind%d\n", part[i].bootind);
+        printf("\tBoot Ind%d\n", part->entry[i].bootind);
         printf("\tStart (Head, Sec, Cyl): %d, %d, %d\n",
-                part[i].start_head, part[i].start_sec, part[i].start_cyl);
-        printf("\tSys Ind%d\n", part[i].sysind);
+                part->entry[i].start_head, part->entry[i].start_sec, part->entry[i].start_cyl);
+        printf("\tSys Ind%d\n", part->entry[i].sysind);
         printf("\tLast (Head, Sec, Cyl): %d, %d, %d\n",
-                part[i].last_head, part[i].last_sec, part[i].last_cyl);
-        printf("\tFirt Sector%d\n", part[i].lowsec);
-        printf("\tSize%d\n", part[i].size);
+                part->entry[i].last_head, part->entry[i].last_sec, part->entry[i].last_cyl);
+        printf("\tFirt Sector %lu\n", part->entry[i].lowsec);
+        printf("\tSize %lu\n", part->entry[i].size);
 
         printf("\n\n");
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* end */
