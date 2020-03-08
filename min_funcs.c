@@ -119,8 +119,24 @@ uint32_t find_filesystem(parser *p, finder *f, part_table *part){
     return 0;
 }
 
-int check_SB(){
-   return 0;
+int check_SB(finder *f, superblock *s){
+    /*returns 0 on success and 1 on failure*/
+    uint32_t file = f->fd;
+    off_t offset = f->offset;
+
+    offset += SBOFFSET; 
+
+    if(-1 == lseek(file, offset, SEEK_SET)){ /*seek to start of super block*/ 
+      perror("lseek");
+      return 1;
+    }
+
+    if(-1 == read(file, s, sizeof(struct superblock))){
+        perror("read");
+        return 1;
+    }
+
+    return 0;
 }
 
 int check_DIR(){
@@ -299,7 +315,8 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
         return 1;
     }
 
-    if(parse->sector != -1 && parse->partition == -1){ /*can not have subpartition with no partition*/
+    if(parse->sector != -1 && parse->partition == -1){ 
+        /*can not have subpartition with no partition*/
         print_usage_get();
         return 1;
     }
@@ -311,17 +328,31 @@ int32_t openfile(struct parser *p, struct finder *f){
       perror("open");
       return -1;
    } /*open returns an int*/
-   return 0; /*****************************************************CHECK THIS*********************not shure*/
+   return 0; 
+   /****************************CHECK THIS*********************not shure*/
 }
 
-void verbose1(){
+void verbose1(superblock *s){
+    printf("Superblock Contents:\n");
+    printf("\tninodes: %d\n", s->ninodes);
+    printf("\ti_blocks: %d\n", s->i_blocks);
+    printf("\tz_blocks: %d\n", s->z_blocks);
+    printf("\tfirstdata: %d\n", s->firstdata);
+    printf("\tlog zone size: %d\n", s->log_zone_size);
+    printf("\tfile size: %d\n", s->max_file);
+    printf("\tnum zones: %d\n", s->zones);
+    printf("\tmagic num: 0x%X\n", s->magic);
+    printf("\tblocksize: %d\n", s->blocksize);
+    printf("\tsubversion:%d\n", s->subversion);
+
+    printf("\n");
 
 }
 
-void verbose2(parser *p, finder *f, part_table *part){
+void verbose2(parser *p, finder *f, part_table *part, superblock *s){
 
     int i;
-    verbose1();
+    verbose1(s);
     printf("Parser:\n");
     printf("\tPartition: %d\n", p->partition);
     printf("\tSubpartition: %d\n", p->sector);
@@ -344,9 +375,10 @@ void verbose2(parser *p, finder *f, part_table *part){
         printf("\tStart (Head, Sec, Cyl): %d, %d, %d\n",
                 part->entry[i].start_head,
                 part->entry[i].start_sec, part->entry[i].start_cyl);
-        printf("\tSys Ind: %X\n", part->entry[i].sysind);
+        printf("\tSys Ind: 0x%X\n", part->entry[i].sysind);
         printf("\tLast (Head, Sec, Cyl): %d, %d, %d\n",
-                part->entry[i].last_head, part->entry[i].last_sec, part->entry[i].last_cyl);
+                part->entry[i].last_head, 
+                part->entry[i].last_sec, part->entry[i].last_cyl);
         printf("\tFirt Sector: %d\n", part->entry[i].lowsec);
         printf("\tSize: %d\n", part->entry[i].size);
 

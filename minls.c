@@ -5,6 +5,7 @@ int main(int argc, char **argv)
     parser p;
     finder f;
     part_table t;
+    superblock s;
     int32_t check;
     int file = 0;
     //int testint;
@@ -19,8 +20,10 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    check_SB(&f, &s);
+
     if(p.verbose){
-        verbose2(&p, &f, &t);
+        verbose2(&p, &f, &t, &s);
     }
 
     close(file);

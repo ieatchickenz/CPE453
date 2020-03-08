@@ -119,7 +119,7 @@ off_t find_offset(int32_t which, struct part_table *part);
 /* MISSING EXPLANATION */
 uint32_t find_filesystem(parser *p, finder *f, part_table *part);
 /* check for a valid Minix superblock */
-int check_SB();
+int check_SB(finder *f, superblock *s);
 /* check that directories being listed really are directories */
 int check_DIR();
 /* check that files being copied really are regular files */
@@ -142,7 +142,7 @@ int parse_line_get(struct parser *parese, int argc, char **argv);
 /*this verbose is reserved for superblocks and inode*/
 void verbose1();
 /*reserved for verbose1, and the parsing, finder and part_table structs*/
-void verbose2(parser *p, finder *f, part_table *part);
+void verbose2(parser *p, finder *f, part_table *part, superblock *s);
 
 
 
