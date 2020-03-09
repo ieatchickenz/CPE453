@@ -1,11 +1,25 @@
 #include "min_funcs.h"
 
+int test_next_name(parser p){
+   int status;
+   while(1){
+      status = next_name(&p);
+      printf("the status is %d\n", status);
+      if( status != 0 && status > 0 )
+         printf( "next_name returned %s\n", p.current );
+      else
+         break;
+   }
+   if(status == 0)
+      printf( "next_name returned %s\n", p.current );
+   return 1;
+}
+
 int main(int argc, char **argv)
 {
    assert(fprintf(stderr, "ASSERTION_ON\n"));
    parser p;
    finder f;
-   int status = 0;
    part_table t;
    inode_minix i;
    superblock s;
@@ -40,18 +54,9 @@ int main(int argc, char **argv)
       default:
          break;
    }
-   while(1){
-      status = next_name(&p);
-      printf("the status is %d\n", status);
-      if( status != 0 && status > 0 )
-         printf( "the current name is %s\n", p.current );
-      else
-         break;
-   }
-   if(status == 0)
-      printf( "the current name is %s\n", p.current );
+
+   assert(test_next_name(p));
 
    close(file);
-   printf("test print since nothing else is doing anything\n");
    return 0;
 }
