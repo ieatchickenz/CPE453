@@ -1,28 +1,48 @@
 #include "min_funcs.h"
 
 void init_parser(parser *p){
+   assert(fprintf(stderr, "init_parser()\n"));
    p->partition = -1;
    p->sector    = -1;
    p->verbose   = 0;
    p->imagefile = NULL;
    p->srcpath = NULL;
    p->dstpath = NULL;
+   p->current[60] = '\0';
+}
+
+int32_t openfile(struct parser *p, struct finder *f){
+   assert(fprintf(stderr, "openfile()\n"));
+   if( -1 == (f->fd = open((p->imagefile), O_RDONLY))){
+      perror("open");
+      return -1;
+   } /*open returns an int*/
+   return 0;
+   /****************************CHECK THIS*********************not shure*/
 }
 
 void init_finder(finder *f){
+   assert(fprintf(stderr, "init_finder()\n"));
     f->offset = 0;
     f->fd = 0;
+    f->zonesize = 0;
 }
 
-uint32_t check_part(int32_t which, finder *f, part_table *part){
-   /*returns 0 on success and 1 on failure*/
+void init_part_table(part_table *t){
+   assert(fprintf(stderr, "init_part_table()\n"));
+   memset(t, 0, sizeof(struct part_table));
+}
 
+/*returns 0 on success and 1 on failure*/
+uint32_t check_part(int32_t which, finder *f, part_table *part){
+   assert(fprintf(stderr, "check_part()\n"));
    uint8_t check_bytes[2];
    off_t offset = f->offset;
    uint32_t file = f->fd;
 
    /*checking validity of partition table first*/
-   if(-1 == lseek(file, offset, SEEK_SET)){  /*first seek to the boot block you're interested in*/
+   /*first seek to the boot block you're interested in*/
+   if(-1 == lseek(file, offset, SEEK_SET)){
        perror("lseek");
        return 1;
    }
@@ -31,6 +51,7 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
        perror("lseek");
        return 1;
    }
+
    /*next fill an array with the bytes we're interested in and check*/
    if(-1 == read(file, check_bytes, 2)){
       perror("read");
@@ -62,17 +83,17 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
    }
 
    /*here we need to find the new offset*/
-   if((offset = find_offset(which, part)) == -1){
+   if( -1 == (offset = find_offset(which, part)) ){
        return 1;
    }
    f->offset = offset;
    /*set the new offset so we can now use this for partition and subpartition*/
 
-
    return 0;
 }
 
 off_t find_offset(int32_t which, struct part_table *part){
+   assert(fprintf(stderr, "find_offset()\n"));
     off_t offset;
     /*check if it's a MINIX style partition*/
     if(part->entry[which].sysind != MINIX){
@@ -86,6 +107,7 @@ off_t find_offset(int32_t which, struct part_table *part){
 
 uint32_t find_filesystem(parser *p, finder *f, part_table *part){
     /* returns 0 on success and 1 on failure*/
+    assert(fprintf(stderr, "find_filesystem()\n"));
     int32_t check = 0;
 
     if( -1 == (check = openfile(p, f)) ){
@@ -121,12 +143,13 @@ uint32_t find_filesystem(parser *p, finder *f, part_table *part){
 
 int check_SB(finder *f, superblock *s){
     /*returns 0 on success and 1 on failure*/
+    assert(fprintf(stderr, "check_SB()\n"));
     uint32_t file = f->fd;
     off_t offset = f->offset;
 
-    offset += SBOFFSET; 
+    offset += SBOFFSET;
 
-    if(-1 == lseek(file, offset, SEEK_SET)){ /*seek to start of super block*/ 
+    if(-1 == lseek(file, offset, SEEK_SET)){ /*seek to start of super block*/
       perror("lseek");
       return 1;
     }
@@ -136,32 +159,102 @@ int check_SB(finder *f, superblock *s){
         return 1;
     }
 
+    if(s->magic != MAGIC){
+      fprintf(stderr, "Not a valid filesystem (Magic mismatch)\n");
+      return 1;
+   }
+
+   logzonesize(s, f);
+
     return 0;
+}
+/* pizza at 6:36 */
+/*ONLY CALL THIS ONCE*/
+int fill_ino(finder *f, superblock *s, inode_minix *i){
+   assert(fprintf(stderr, "fill_ino()\n"));
+   uint32_t file = f->fd;
+   uint32_t imap_size = 0;
+   uint32_t zmap_size = 0;
+   /*set offset to 2 blocks more. Gets us to imap*/
+   f->offset += (2*(s->blocksize));
+
+   /*calculate size of imap and add to offset*/
+   imap_size = s->i_blocks * s->blocksize;
+   f->offset += imap_size;
+
+   /*calculate size of zmap and add to offset*/
+   zmap_size = s->z_blocks * s->blocksize;
+   f->offset += zmap_size;
+
+   /*should be at beginging of inode table, fill root inode*/
+   if(-1 == lseek(file, f->offset, SEEK_SET)){ /*seek to start of inode table*/
+     perror("lseek");
+     return 1;
+   }
+
+   if(-1 == read(file, i, sizeof(struct inode_minix))){
+      perror("read");
+      return 1;
+   }
+
+   return 0;
 }
 
 int check_DIR(){
+   assert(fprintf(stderr, "check_DIR()\n"));
+
    return 0;
 }
 
 int check_file(){
+   assert(fprintf(stderr, "check_file()\n"));
    return 0;
 }
 
-int LBA_convert(){
-   return 0;
+/* returns1 if there's and additional name, 0 otherwise */
+int next_name(parser *p){
+   assert(fprintf(stderr, "next_name()\n"));
+   assert(fprintf(stderr, "path is %s\n", p->srcpath));
+   static int place = 0;
+   int c, size, where = 0;
+   size =  strlen(p->srcpath);
+   /* skip first '/' if there is one*/
+   if(  (place == 0) && ( (p->srcpath)[0] == '/') )
+      place = 1;
+   /* traversing path statically returning each time a '/' is encountered */
+   for(int i = place; i < size; i++){
+      assert(fprintf(stderr, "i= %d, c= %c, size= %d, place= %d, where= %d\n",
+                              i,     c,     size,     place,     where));
+      c = (p->srcpath)[i];
+      if(c == '/'){
+         place = place + 1;
+         p->current[where] = '\0';
+         return 0;
+      }
+      p->current[where] = c;
+      place++;
+      where++;
+   }
+   assert(fprintf(stderr, "done*****************************************\n"));
+   p->current[where] = '\0';
+   return 1;
 }
 
-int logzonesize(){
+int logzonesize(superblock *s, finder *f){
+   assert(fprintf(stderr, "logzonesize()\n"));
+   /* left shifting log_zon... into zonesize */
+   f->zonesize = (s->blocksize) << s->log_zone_size;
    return 0;
 }
 
 int parse_line_ls(struct parser *parse, int argc, char **argv){
+   assert(fprintf(stderr, "parse_line_ls()\n"));
     int32_t c;
     char *endptr;
     extern char *optarg;
     extern int optind;
 
-    while((c=getopt(argc, argv, "hvp:s:")) != -1){
+    while( (c=getopt(argc, argv, "hvp:s:")) != -1 ){
        switch(c){
             case 'v':
                 parse->verbose += 1;
@@ -227,26 +320,8 @@ int parse_line_ls(struct parser *parse, int argc, char **argv){
     return 0;
 }
 
-void print_usage_ls(){
-    printf("usage: minls [-v] [-p part [-s subpart]] imagefile [path]\n");
-    printf("Options:\n\t-p  part    --- select partition for filesystem");
-    printf("(default");
-    printf(": none)\n\t-s  sub     --- select subpartition for filesystem");
-    printf("(default: none)\n\t-h  help    --- print usage information and");
-    printf(" exit\n\t-v  verbose --- increase verbosity level\n");
-}
-
-void print_usage_get(){
-    printf("usage: minls [-v] [-p part [-s subpart]] imagefile srcpath");
-    printf(" [dstpath]\n");
-    printf("Options:\n\t-p  part    --- select partition for filesystem");
-    printf("(default");
-    printf(": none)\n\t-s  sub     --- select subpartition for filesystem");
-    printf("(default: none)\n\t-h  help    --- print usage information and");
-    printf(" exit\n\t-v  verbose --- increase verbosity level\n");
-}
-
 int parse_line_get(struct parser *parse, int argc, char **argv){
+   assert(fprintf(stderr, "parse_line_get()\n"));
     int32_t c;
     char *endptr;
     extern char *optarg;
@@ -315,7 +390,7 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
         return 1;
     }
 
-    if(parse->sector != -1 && parse->partition == -1){ 
+    if(parse->sector != -1 && parse->partition == -1){
         /*can not have subpartition with no partition*/
         print_usage_get();
         return 1;
@@ -323,36 +398,72 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
     return 0;
 }
 
-int32_t openfile(struct parser *p, struct finder *f){
-   if( -1 == (f->fd = open((p->imagefile), O_RDONLY))){
-      perror("open");
-      return -1;
-   } /*open returns an int*/
-   return 0; 
-   /****************************CHECK THIS*********************not shure*/
+void print_usage_ls(){
+    printf("usage: minls [-v] [-p part [-s subpart]] imagefile [path]\n");
+    printf("Options:\n\t-p  part    --- select partition for filesystem");
+    printf("(default");
+    printf(": none)\n\t-s  sub     --- select subpartition for filesystem");
+    printf("(default: none)\n\t-h  help    --- print usage information and");
+    printf(" exit\n\t-v  verbose --- increase verbosity level\n");
 }
 
-void verbose1(superblock *s){
+void print_usage_get(){
+    printf("usage: minls [-v] [-p part [-s subpart]] imagefile srcpath");
+    printf(" [dstpath]\n");
+    printf("Options:\n\t-p  part    --- select partition for filesystem");
+    printf("(default");
+    printf(": none)\n\t-s  sub     --- select subpartition for filesystem");
+    printf("(default: none)\n\t-h  help    --- print usage information and");
+    printf(" exit\n\t-v  verbose --- increase verbosity level\n");
+}
+
+void verbose1(superblock *s, finder *f, inode_minix *i){
+   time_t currtime;
     printf("Superblock Contents:\n");
     printf("\tninodes: %d\n", s->ninodes);
     printf("\ti_blocks: %d\n", s->i_blocks);
     printf("\tz_blocks: %d\n", s->z_blocks);
     printf("\tfirstdata: %d\n", s->firstdata);
-    printf("\tlog zone size: %d\n", s->log_zone_size);
-    printf("\tfile size: %d\n", s->max_file);
+    printf("\tlog zone size: %d    (zone size: %u)\n",
+                              s->log_zone_size, f->zonesize);
+    printf("\tfile size: %u\n", s->max_file);
     printf("\tnum zones: %d\n", s->zones);
     printf("\tmagic num: 0x%X\n", s->magic);
     printf("\tblocksize: %d\n", s->blocksize);
     printf("\tsubversion:%d\n", s->subversion);
-
     printf("\n");
 
+    printf("File Inode:\n");
+    printf("\tuint16_t mode: %X\n", i->mode);
+    printf("\tuint16_t links: %u\n", i->links);
+    printf("\tuint16_t uid: %u\n", i->uid);
+    printf("\tuint16_t gid: %u\n", i->gid);
+    printf("\tuint16_t size: %u\n", i->size);
+    /*convert times to a string*/
+    currtime = (time_t)(i->atime);
+    printf("\tuint32_t atime: %u --- %s", i->atime, ctime(&currtime));
+
+    currtime = (time_t)(i->mtime);
+    printf("\tuint32_t mtime: %u --- %s", i->mtime, ctime(&currtime));
+
+    currtime = (time_t)(i->atime);
+    printf("\tuint32_t ctime: %u --- %s\n", i->ctime, ctime(&currtime));
+
+    printf("\nDirect Zones:\n");
+    printf("\t\t\tzone [0] = %u\n", i->zone[0]);
+    printf("\t\t\tzone [1] = %u\n", i->zone[1]);
+    printf("\t\t\tzone [2] = %u\n", i->zone[2]);
+    printf("\t\t\tzone [3] = %u\n", i->zone[3]);
+    printf("\t\t\tzone [4] = %u\n", i->zone[4]);
+    printf("\t\t\tzone [5] = %u\n", i->zone[5]);
+    printf("\t\t\tzone [6] = %u\n", i->zone[6]);
+    printf("\tuint32_t indirect = %u\n", i->indirect);
+    printf("\tuint32_t double = %u\n", i->two_indirect);
 }
 
-void verbose2(parser *p, finder *f, part_table *part, superblock *s){
-
-    int i;
-    verbose1(s);
+void verbose2(parser *p, finder *f, part_table *part, superblock *s,
+              inode_minix *i){
+    verbose1(s, f, i);
     printf("Parser:\n");
     printf("\tPartition: %d\n", p->partition);
     printf("\tSubpartition: %d\n", p->sector);
@@ -369,7 +480,7 @@ void verbose2(parser *p, finder *f, part_table *part, superblock *s){
 
     printf("\n");
 
-    for(i=0;i<4;i++){
+    for(int i = 0; i < 4; i++){
         printf("Entry [%d]:\n", i);
         printf("\tBoot Ind: %d\n", part->entry[i].bootind);
         printf("\tStart (Head, Sec, Cyl): %d, %d, %d\n",
@@ -377,14 +488,12 @@ void verbose2(parser *p, finder *f, part_table *part, superblock *s){
                 part->entry[i].start_sec, part->entry[i].start_cyl);
         printf("\tSys Ind: 0x%X\n", part->entry[i].sysind);
         printf("\tLast (Head, Sec, Cyl): %d, %d, %d\n",
-                part->entry[i].last_head, 
+                part->entry[i].last_head,
                 part->entry[i].last_sec, part->entry[i].last_cyl);
         printf("\tFirt Sector: %d\n", part->entry[i].lowsec);
         printf("\tSize: %d\n", part->entry[i].size);
-
         printf("\n\n");
     }
-
 }
 
 

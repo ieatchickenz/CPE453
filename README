@@ -13,6 +13,14 @@ git add filename
 git rm filename
 git commit -m "yourmessage here"
 git push
+git merge --abort
+git reset --merge
+# aslo
+# https://pgaskin.net/linux-tips/configuring-git-credential-cache-on-linux/
+# https://pubs.opengroup.org/onlinepubs/7908799/xsh/dirent.h.html
+
+
+
 
 use beyond compare
 

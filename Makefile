@@ -4,6 +4,7 @@ CC_FLAGS = -c -Wall -pedantic -Wextra
 
 # Target specific variable values
 # https://www.gnu.org/software/make/manual/make.html#Target_002dspecific
+
 all: clean non_diag
 diag: clean minls minget
 non_diag: CC_FLAGS += -DNDEBUG
@@ -24,7 +25,6 @@ min_funcs.o: min_funcs.c min_funcs.h
 
 utilities.o: utilities.c utilities.h
 	$(CC) $(CC_FLAGS) -c -o utilities.o utilities.c
-#<<<<<<< HEAD=======>>>>>>> fd8c888f5d6ba47164d5379e968114b24cf99640
 
 clean:
 	@rm -f *.o minls minget

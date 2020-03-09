@@ -18,9 +18,9 @@
 #define DIRECT_ZONES 7     /* no fucking clue */
 
 /* from /usr/include/i386/partition.h */
-#define ACTIVE_FLAG	0x80	/* value for active in bootind field (hd0) */
-#define NR_PARTITIONS	4	/* number of entries in partition table */
-#define	PART_TABLE_OFF	0x1BE	/* offset of partition table in boot sector */
+#define ACTIVE_FLAG	0x80	     /* value for active in bootind field (hd0) */
+#define NR_PARTITIONS	4	     /* number of entries in partition table */
+#define	PART_TABLE_OFF	0x1BE	  /* offset of partition table in boot sector */
 
 /* Partition types. */
 #define NO_PART		0x00	/* unused entry */
@@ -101,17 +101,21 @@ typedef struct parser {
     char    *imagefile;
     char    *srcpath; /*used for path in minls*/
     char    *dstpath;
+    char    current[61];
 } parser;
 
 typedef struct finder{
     off_t offset;
     int32_t fd;
+    int32_t zonesize;
 } finder;
 
 /* initialize parser structure */
 void init_parser(parser *p);
-/* MISSING EXPLANATION */
+/* initializes finder struct for clean verbose prints */
 void init_finder(finder *f);
+/* initialies partition table to zero for clean verbose prints */
+void init_part_table(part_table *t);
 /* check the disk image for valid partition table(s), if requested */
 uint32_t check_part(int32_t which, finder *f, part_table *part);
 /*find the new offset*/
@@ -124,10 +128,12 @@ int check_SB(finder *f, superblock *s);
 int check_DIR();
 /* check that files being copied really are regular files */
 int check_file();
-/* converts LBA = (c · H + h) · S + s − 1    **** not needed*/
-int LBA_convert();
 /* calculates actual log zone size zonesize = blocksize << log2 zonesize */
-int logzonesize();
+int logzonesize(superblock *s, finder *f);
+/* find and fill the root inode */
+int fill_ino(finder *f, superblock *s, inode_minix *i);
+/* will parse out the next names from a path starting with the first*/
+int next_name(parser *p);
 /* given incorrect input format minls, prints usage */
 void print_usage_ls();
 /* given incorrect input format minget, prints usage */
@@ -140,9 +146,10 @@ int parse_line_ls(struct parser *parse, int argc, char **argv);
 int parse_line_get(struct parser *parese, int argc, char **argv);
 /*in main put switch statement that decides which verbose to run*/
 /*this verbose is reserved for superblocks and inode*/
-void verbose1();
+void verbose1(superblock *s, finder *f, inode_minix *i);
 /*reserved for verbose1, and the parsing, finder and part_table structs*/
-void verbose2(parser *p, finder *f, part_table *part, superblock *s);
+void verbose2(parser *p, finder *f, part_table *part, superblock *s,
+              inode_minix *i);
 
 
 
