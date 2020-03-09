@@ -170,7 +170,7 @@ int check_SB(finder *f, superblock *s){
 }
 /* pizza at 6:36 */
 /*ONLY CALL THIS ONCE*/
-int fill_ino(finder *f, superblock *s, inode_minix *i){
+int fill_root_ino(finder *f, superblock *s, inode_minix *i){
    assert(fprintf(stderr, "fill_ino()\n"));
    uint32_t file = f->fd;
    uint32_t imap_size = 0;
@@ -211,7 +211,7 @@ int check_file(){
    return 0;
 }
 
-/* returns1 if there's and additional name, 0 otherwise */
+/* returns 1 if there's an additional name, -1 if name > 60, and 0 when done */
 int next_name(parser *p){
    assert(fprintf(stderr, "next_name()\n"));
    assert(fprintf(stderr, "path is %s\n", p->srcpath));
@@ -223,21 +223,22 @@ int next_name(parser *p){
       place = 1;
    /* traversing path statically returning each time a '/' is encountered */
    for(int i = place; i < size; i++){
+      c = (p->srcpath)[i];
       assert(fprintf(stderr, "i= %d, c= %c, size= %d, place= %d, where= %d\n",
                               i,     c,     size,     place,     where));
-      c = (p->srcpath)[i];
       if(c == '/'){
          place = place + 1;
          p->current[where] = '\0';
-         return 0;
+         return 1;
       }
       p->current[where] = c;
+      if(where > 59)
+         return -1;
       place++;
       where++;
    }
-   assert(fprintf(stderr, "done*****************************************\n"));
    p->current[where] = '\0';
-   return 1;
+   return 0;
 }
 
 int logzonesize(superblock *s, finder *f){

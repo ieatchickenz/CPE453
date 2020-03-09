@@ -41,8 +41,7 @@
 
 #include "utilities.h"
 #include <getopt.h>
-/*uint32_t inode inode number
-unsigned char name[60] filename string*/
+
 
 /* Minix Version 3 Superblock this structure found in fs/super.h in minix
  * 3.1.1 on disk. These fields and orientation are non–negotiable */
@@ -63,18 +62,18 @@ typedef struct __attribute__((__packed__)) superblock {
 } superblock;
 
 typedef struct __attribute__((__packed__)) inode_minix {
-  uint16_t mode;
-  uint16_t links;
-  uint16_t uid;
-  uint16_t gid;
-  uint32_t size;
-  int32_t atime;
-  int32_t mtime;
-  int32_t ctime;
-  uint32_t zone[DIRECT_ZONES];
-  uint32_t indirect;
-  uint32_t two_indirect;
-  uint32_t unused;
+  uint16_t mode;                 /* bitfield of type and permisions */
+  uint16_t links;                /* number of links to file/folder */
+  uint16_t uid;                  /* user ID */
+  uint16_t gid;                  /* group ID */
+  uint32_t size;                 /* size of file/folder */
+  int32_t atime;                 /* last accessed*/
+  int32_t mtime;                 /* last modified*/
+  int32_t ctime;                 /* last chang to anythinng*/
+  uint32_t zone[DIRECT_ZONES];   /* 7 different zones */
+  uint32_t indirect;             /* more zones */
+  uint32_t two_indirect;         /* even more zones */
+  uint32_t unused;               /* stuff */
 } inode_minix;
 
 typedef struct __attribute__((__packed__)) part_entry {
@@ -90,10 +89,12 @@ typedef struct __attribute__((__packed__)) part_entry {
   uint32_t size;         /* size of partition in sectors	 */
 } part_entry;
 
+/* total partition table */
 typedef struct __attribute__((__packed__)) part_table {
    part_entry entry[4];
 } part_table;
 
+/* used in conjustion with getopt() */
 typedef struct parser {
     int32_t partition;
     int32_t sector;
@@ -104,6 +105,7 @@ typedef struct parser {
     char    current[61];
 } parser;
 
+/* holds randome other stuff */
 typedef struct finder{
     off_t offset;
     int32_t fd;
@@ -131,7 +133,7 @@ int check_file();
 /* calculates actual log zone size zonesize = blocksize << log2 zonesize */
 int logzonesize(superblock *s, finder *f);
 /* find and fill the root inode */
-int fill_ino(finder *f, superblock *s, inode_minix *i);
+int fill_root_ino(finder *f, superblock *s, inode_minix *i);
 /* will parse out the next names from a path starting with the first*/
 int next_name(parser *p);
 /* given incorrect input format minls, prints usage */

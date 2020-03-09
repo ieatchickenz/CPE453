@@ -5,6 +5,7 @@ int main(int argc, char **argv)
    assert(fprintf(stderr, "ASSERTION_ON\n"));
    parser p;
    finder f;
+   int status = 0;
    part_table t;
    inode_minix i;
    superblock s;
@@ -25,7 +26,7 @@ int main(int argc, char **argv)
          return 1;
    }
 
-   fill_ino(&f, &s, &i);
+   fill_root_ino(&f, &s, &i);
 
    switch(p.verbose){
       case(1):
@@ -38,12 +39,18 @@ int main(int argc, char **argv)
 
       default:
          break;
-    }
-
-   while( 1 != next_name(&p) )
+   }
+   while(1){
+      status = next_name(&p);
+      printf("the status is %d\n", status);
+      if( status != 0 && status > 0 )
+         printf( "the current name is %s\n", p.current );
+      else
+         break;
+   }
+   if(status == 0)
       printf( "the current name is %s\n", p.current );
-   printf( "the current name is %s\n", p.current );
-   
+
    close(file);
    printf("test print since nothing else is doing anything\n");
    return 0;
