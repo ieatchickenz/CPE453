@@ -38,6 +38,10 @@
 #define OTH_RD_PERM  0000004
 #define OTH_WT_PERM  0000002
 #define OTH_EX_PERM  0000001
+#define PERM_MASK    0000777
+#define O_PERMS      0000111
+#define G_PERMS      0000222
+#define T_PERMS      0000333
 
 #include "utilities.h"
 #include <getopt.h>
@@ -115,12 +119,15 @@ typedef struct parser {
 
 /* holds randome other stuff */
 typedef struct finder{
-    off_t   offset;
-    int32_t fd;
-    int32_t zonesize;
-    int32_t last_sector;
-    int32_t *indirect;
-    int32_t *two_indirect;
+    off_t         offset;
+    int32_t       fd;
+    int32_t       zonesize;         /* zone size in bytes*/
+    int32_t       last_sector;
+    int32_t       *indirect;
+    int32_t       *two_indirect;
+    dir_entry     dir_ent;
+    int32_t       where;
+    inode_minix   target;
 } finder;
 
 /* initialize parser structure */
@@ -152,7 +159,7 @@ int next_name(parser *p);
 /* gets the type of the file (file or folder) */
 int get_type(parser *p, inode_minix *i);
 /* checks the current name against the current inode/file */
-int check_name(superblock *s, finder *f, parser *p, inode_minix *i);
+int find_target(superblock *s, finder *f, parser *p, inode_minix *i);
 /* given incorrect input format minls, prints usage */
 void print_usage_ls();
 /* given incorrect input format minget, prints usage */
@@ -163,6 +170,14 @@ int32_t openfile(struct parser *p, struct finder *f);
 int parse_line_ls(struct parser *parse, int argc, char **argv);
 /* specifit parsing functionality for minget */
 int parse_line_get(struct parser *parese, int argc, char **argv);
+/*finds and checks if zonesize is valid*/
+int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector);
+/*copies indirect in finder struct*/
+int fill_indirect(int32_t indirect_zone, superblock *s, finder *f);
+/*copies double indirect in finder struct*/
+int fill_two_indirect(int32_t two_indirect_zone, superblock *s, finder *f);
+/*define perms as ['-'] * 12 before calling this function*/
+int fill_perms(char *perms, int32_t type, mode_t mode);
 /* main verbose function */
 void verbose0(part_table *t, parser *p, finder *f, superblock *s, inode_minix *i);
 /* this verbose is reserved for superblocks and inode */

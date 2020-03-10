@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 
    /*assert(test_next_name(p));*/
    next_name(&p);
-   check_name(&s, &f, &p, &i);
+   fill_dir_entry(&s, &f, &p, &i);
 
    close_file(&f);
    return 0;

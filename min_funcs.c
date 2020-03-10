@@ -168,8 +168,8 @@ int check_SB(finder *f, superblock *s){
    }
 
    logzonesize(s, f);
-   f->indirect = calloc(((s->blocksize)/4), sizeof(int32_t));
-   f->two_indirect = calloc(((s->blocksize)/4), sizeof(int32_t));
+   f->indirect = calloc((s->blocksize), sizeof(int32_t));
+   f->two_indirect = calloc((s->blocksize), sizeof(int32_t));
 
     return 0;
 }
@@ -202,9 +202,6 @@ int fill_root_ino(finder *f, superblock *s, inode_minix *i){
       return 1;
    }
 
-   /*Also want to fill the indirect and double indirect fields in here*/
-   /*NEED TO SEEK TO INDIRECT BLOCK*/
-
    return 0;
 }
 
@@ -232,18 +229,65 @@ int get_type(parser *p, inode_minix *i){
 
 
 /* fills current name in the parser struct, **must send in current inode**/
-int check_name(superblock *s, finder *f, parser *p, inode_minix *i){
-   assert(fprintf(stderr, "check_name()\n"));
-   /*  find blocks per zone, multiply by znoe number*/
-   uint32_t bpz, where; /* bpz = blocks perzone */
-   bpz = logzonesize(s, f);
-   where = ((i->zone[0])*bpz)*s->blocksize;
-   lseek(f->fd, where, SEEK_SET);
-   read(f->fd, p->compare, sizeof(p->current) );
-   assert(fprintf(stderr, "current is %s, compare is %s\n",
-                                          p->current, p->compare));
+/* only ecepts inodes */
+int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
+   assert(fprintf(stderr, "find_dir_entry()\n"));
+   int type;
+   uint32_t where;
+   type = next_name(p)
+   if(type >= 0){
+      /*DIRECT ZONES FIRST*/
+      for(int k = 0; k < 7; k++){
+         /* move on to next zone if empty */
+         if(!(i->zone[k])){
+            continue;
+         }
+         /* find blocks per zone, multiply by znoe number */
+         if(where = seek_zone(i->zone[k], f->zonesize, f->last_sector)) < 0){
+               return 1;
+         }
+         /* for each zone run through and look at each etry */
+         for(int j = 0; j < (i->size)/DIR_SIZE; j++){
+            lseek(f->fd, where + (j*4), SEEK_SET);
+            read(f->fd, &(f->dir_ent), sizeof(struct dir_entry) );
+            if(!memcmp(current, f->dir_ent.name, sizeof(p->compare)-1) ){
+               memcpy((p->compare),&(f->dir_ent.name),sizeof(p->compare)-1);
+               assert(fprintf(stderr, "current %s, compare %s\n",p->current,
+               p->compare));
+               break;
+            }
+
+
+            /* if current is a directory, keep going, otherwise return */
+            if(get_type(p, i)){ /*if negative returned bail, if 0 it's is last or a file*/
+
+
+            }
+         }
+         return 0;
+      }
+
+      /*INDIRECT NEXT*/
+      for(int k = 0; k < (s->blocksize)/4; k++){
+
+      }
+      /*DOUBLE INDIRECT*/
+   }
    return 0;
 }
+
+/*finds and checks if zonesize is valid*/
+int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector){
+   /*returns -1 if out of bounds*/
+      int32_t where, cutoff;
+      cutoff = (last_sector+1)*512;
+      if((where = zone_num * zone_size) > cutoff){
+         fprintf(stderr, "Zone is out of bounds.\n");
+         return -1;
+      }
+      return where;
+}
+
 
 
 /* "All directories are linked into a tree starting
@@ -376,6 +420,104 @@ int parse_line_ls(struct parser *parse, int argc, char **argv){
     return 0;
 }
 
+/*coppies indirect in finder struct*/
+int fill_indirect(int32_t indirect_zone, superblock *s, finder *f){
+   /*0 for success 1 for failure*/
+   uint32_t indirect = seek_zone(indirect_zone, f->zonesize, f->last_sector);
+   if(indirect < 0){
+      return 1;
+   }
+
+   if(indirect_zone){
+      if(-1 == lseek(f->fd, indirect, SEEK_SET)){
+         perror("lseek");
+         return 1;
+      }
+
+      if(-1 == read(f->fd, f->indirect, s->blocksize)){
+         perror("read");
+         return 1;
+      }
+   }
+
+   return 0;
+}
+
+/*copies double indirect in finder struct*/
+int fill_two_indirect(int32_t two_indirect_zone, superblock *s, finder *f){
+   /*0 for success 1 for failure*/
+   uint32_t two_indirect = seek_zone(two_indirect_zone, f->zonesize, f->last_sector);
+   if(two_indirect < 0){
+      return 1;
+   }
+
+   if(two_indirect_zone){
+      if(-1 == lseek(f->fd, two_indirect, SEEK_SET)){
+         perror("lseek");
+         return 1;
+      }
+
+      if(-1 == read(f->fd, f->two_indirect, s->blocksize)){
+         perror("read");
+         return 1;
+      }
+   }
+
+   return 0;
+}
+
+/*define perms as ['-'] * 12 before calling this function*/
+int fill_perms(char *perms, int32_t type, mode_t mode){
+   /*returns 0 on success and 1 on failure*/
+
+   /*check if dir, file, or niether*/
+   if(type < 0){
+      return 1;
+   }
+
+   if(type){
+      *perms = 'd';
+   }
+
+   /*now fill permissions*/
+   if(mode & O_RD_PERM){
+      *(perms + 1) = 'r';
+   }
+
+   if(mode & O_WT_PERM){
+      *(perms + 2) = 'w';
+   }
+
+   if(mode & O_EX_PERM){
+      *(perms + 3) = 'x';
+   }
+
+   if(mode & G_RD_PERM){
+      *(perms + 4) = 'r';
+   }
+
+   if(mode & G_WT_PERM){
+      *(perms + 5) = 'w';
+   }
+
+   if(mode & G_EX_PERM){
+      *(perms + 6) = 'x';
+   }
+
+   if(mode & OTH_RD_PERM){
+      *(perms + 7) = 'r';
+   }
+
+   if(mode & OTH_WT_PERM){
+      *(perms + 8) = 'w';
+   }
+
+   if(mode & OTH_EX_PERM){
+      *(perms + 9) = 'x';
+   }
+
+}
+
 int parse_line_get(struct parser *parse, int argc, char **argv){
    assert(fprintf(stderr, "parse_line_get()\n"));
     int32_t c;
@@ -453,6 +595,67 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
     }
     return 0;
 }
+
+/*this function is to print for minls - returns int to pass message*/
+int ls_file(int32_t type, finder *f){
+   /*0 on success and 1 on failure*/
+   uint32_t num_nodes, counter, zone, check;
+   inode_minix i, target;
+   dir_entry d;
+
+   target = f->target
+   uint8_t perms[10] = {'-','-','-','-','-','-','-','-','-','-'};
+   num_bytes = i->size;
+   counter = 0;
+
+   if(type < 0){
+      return 1;
+   }
+
+   if(type){  /*DIRECTORY*/
+      if(p->srcpath){
+         printf("%s:\n", p->srcpath);
+      }
+      else{
+         printf("/:\n");
+      }
+      /*FOR DIRECT ZONES*/
+      for(int k=0; k < 7 , k++){
+         if(!(target.zone[k])){
+            continue;
+         }
+         if((zone = seek_zone(target.zone[k],
+                               f->zonesize, f->last_sector))<0){
+            return 1;
+         }
+         lseek(f->fd, zone, SEEK_SET);
+            /*in correct zone now, traverse dir_ents*/
+         while(counter <= (num_bytes/DIR_SIZE) && counter < (f->zonesize/DIR_SIZE)){ /*here counter counts directories*/
+            zone += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
+            /*go to inode table and needed inode*/
+            lseek(f->fd, offset + ((d->inode)*INO_SIZE), SEEK_SET);
+            read(f->fd, &i, sizeof(inode_minix));
+            /*here's where we do the printing*/
+            check = fill_perms(&perms, type, target.mode);
+            printf("");
+            /*seek back to zone*/
+            lseek(f->fd, zone, SEEK_SET);
+            counter++;
+         }
+
+         if(counter == (num_bytes/DIR_SIZE)){ /*no need to check more blocks*/
+            return 0;
+         }
+      }
+
+
+
+
+
+
+   }
+}
+
 
 void print_usage_ls(){
     printf("usage: minls [-v] [-p part [-s subpart]] imagefile [path]\n");
