@@ -36,23 +36,19 @@ int main(int argc, char **argv)
    }
 
    if( (check = check_SB(&f, &s)) ){
-         return 1;
+      return 1;
    }
 
-   fill_root_ino(&f, &s, &i);
-
-   switch(p.verbose){
-      case(1):
-         verbose1(&s, &f, &i);
-      break;
-
-      case(2):
-         verbose2(&p, &f, &t, &s, &i);
-      break;
-
-      default:
-         break;
+   if( 1 == fill_root_ino(&f, &s, &i) ){
+      return 1;  /**************instead of returning 1, we should call an
+      exit function that will close the passed in file***********????????*****/
    }
+
+   
+   if(p.verbose){
+      verbose0(&p, &f, &s, &i);
+   }
+
 
    assert(test_next_name(p));
 

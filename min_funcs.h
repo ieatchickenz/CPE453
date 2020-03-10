@@ -20,7 +20,7 @@
 /* from /usr/include/i386/partition.h */
 #define ACTIVE_FLAG	0x80	     /* value for active in bootind field (hd0) */
 #define NR_PARTITIONS	4	     /* number of entries in partition table */
-#define	PART_TABLE_OFF	0x1BE	  /* offset of partition table in boot sector */
+#define PART_TABLE_OFF	0x1BE	  /* offset of partition table in boot sector */
 
 /* Partition types. */
 #define NO_PART		0x00	/* unused entry */
@@ -94,6 +94,11 @@ typedef struct __attribute__((__packed__)) part_table {
    part_entry entry[4];
 } part_table;
 
+typedef struct __attribute__((__packed__)) dir_entry {
+   uint32 t inode             /* inode number */
+   unsigned char name[60]     /* filename string */
+} dir_entry;
+
 /* used in conjustion with getopt() */
 typedef struct parser {
     int32_t partition;
@@ -103,6 +108,8 @@ typedef struct parser {
     char    *srcpath; /*used for path in minls*/
     char    *dstpath;
     char    current[61];
+    int     current_type; /* 0 for file, 1 for folder, and -1 for neither */
+    cher    compare[61];
 } parser;
 
 /* holds randome other stuff */
@@ -141,6 +148,10 @@ void close_file(finder *f);
 int fill_root_ino(finder *f, superblock *s, inode_minix *i);
 /* will parse out the next names from a path starting with the first*/
 int next_name(parser *p);
+/* gets the type of the file (file or folder) */
+int get_type(parser *p, inode_minix *i);
+/* checks the current name against the current inode/file */
+int check_name(parser *p, inode_minix *i);
 /* given incorrect input format minls, prints usage */
 void print_usage_ls();
 /* given incorrect input format minget, prints usage */
@@ -151,10 +162,11 @@ int32_t openfile(struct parser *p, struct finder *f);
 int parse_line_ls(struct parser *parse, int argc, char **argv);
 /* specifit parsing functionality for minget */
 int parse_line_get(struct parser *parese, int argc, char **argv);
-/*in main put switch statement that decides which verbose to run*/
-/*this verbose is reserved for superblocks and inode*/
+/* main verbose function */
+void verbose0(parser *p, finder *f, superblock *s, inode *i);
+/* this verbose is reserved for superblocks and inode */
 void verbose1(superblock *s, finder *f, inode_minix *i);
-/*reserved for verbose1, and the parsing, finder and part_table structs*/
+/* reserved for verbose1, and the parsing, finder and part_table structs */
 void verbose2(parser *p, finder *f, part_table *part, superblock *s,
               inode_minix *i);
 

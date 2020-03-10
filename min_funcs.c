@@ -89,9 +89,9 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
    }
    f->offset = offset;
    /*set the new offset so we can now use this for partition and subpartition*/
-    
+
     /*find the last sector of the partition*/
-    f->last_sector = part->entry[which].lowsec + part->entry[which].size - 1; 
+    f->last_sector = part->entry[which].lowsec + part->entry[which].size - 1;
    return 0;
 }
 
@@ -201,13 +201,43 @@ int fill_root_ino(finder *f, superblock *s, inode_minix *i){
       perror("read");
       return 1;
    }
-   
+
    /*Also want to fill the indirect and double indirect fields in here*/
    /*NEED TO SEEK TO INDIRECT BLOCK*/
-   
+
    return 0;
 }
 
+/* for now it's self explanitory */
+int get_type(parser *p, inode_minix *i){
+   assert(fprintf(stderr, "get_type()\n"));
+   if(i->links == 0){
+      return -1;
+   }
+   switch(i->mode & F_TYPE_MASK){
+      case REG_FILE:
+         return 0;
+      break;
+
+      case DIRECTORY:
+         return 1;
+      break;
+
+      default:
+         printf("%s is not a standard file or folder\n", p->current);
+         return -1;
+      break;
+   }
+}
+
+
+/* "All directories are linked into a tree starting
+   at the root directory at inode 1." ....         ????????     */
+int check_name(parser *p, inode_minix *i){
+   assert(fprintf(stderr, "get_type()\n"));
+
+   return 0;
+}
 
 int check_DIR(){
    assert(fprintf(stderr, "check_DIR()\n"));
@@ -431,6 +461,21 @@ void print_usage_get(){
     printf(": none)\n\t-s  sub     --- select subpartition for filesystem");
     printf("(default: none)\n\t-h  help    --- print usage information and");
     printf(" exit\n\t-v  verbose --- increase verbosity level\n");
+}
+
+void verbose0(parser *p, finder *f, superblock *s, inode *i){
+   switch(p.verbose){
+      case(1):
+         verbose1(&s, &f, &i);
+      break;
+
+      case(2):
+         verbose2(&p, &f, &t, &s, &i);
+      break;
+
+      default:
+         break;
+   }
 }
 
 void verbose1(superblock *s, finder *f, inode_minix *i){
