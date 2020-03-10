@@ -15,6 +15,10 @@ int test_next_name(parser p){
    return 1;
 }
 
+/* 012345678901234567890123456789012345678901234567890123456789 */
+/* This is a 60 character string to see if the cap is at real . */
+
+
 int main(int argc, char **argv)
 {
    assert(fprintf(stderr, "ASSERTION_ON\n"));
@@ -50,7 +54,9 @@ int main(int argc, char **argv)
    }
 
 
-   assert(test_next_name(p));
+   /*assert(test_next_name(p));*/
+   next_name(&p);
+   check_name(&s, &f, &p, &i);
 
    close_file(&f);
    return 0;

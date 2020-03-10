@@ -231,18 +231,20 @@ int get_type(parser *p, inode_minix *i){
 }
 
 
-
+/* fills current name in the parser struct, **must send in current inode**/
 int check_name(superblock *s, finder *f, parser *p, inode_minix *i){
-   assert(fprintf(stderr, "get_type()\n"));
+   assert(fprintf(stderr, "check_name()\n"));
    /*  find blocks per zone, multiply by znoe number*/
    uint32_t bpz, where; /* bpz = blocks perzone */
    bpz = logzonesize(s, f);
    where = ((i->zone[0])*bpz)*s->blocksize;
    lseek(f->fd, where, SEEK_SET);
-   read(f->fd, p->current, sizeof(p->current) );
+   read(f->fd, p->compare, sizeof(p->current) );
+   assert(fprintf(stderr, "current is %s, compare is %s\n",
+                                          p->current, p->compare));
    return 0;
 }
-/*off_t lseek(int fd, off_t offset, int whence);*/
+
 
 /* "All directories are linked into a tree starting
    at the root directory at inode 1." ....         ????????     */
@@ -270,8 +272,8 @@ int next_name(parser *p){
    /* traversing path statically returning each time a '/' is encountered */
    for(int i = place; i < size; i++){
       c = (p->srcpath)[i];
-      assert(fprintf(stderr, "i= %d, c= %c, size= %d, place= %d, where= %d\n",
-                              i,     c,     size,     place,     where));
+      /*assert(fprintf(stderr, "i= %d, c= %c, size= %d, place= %d, where= %d\n",
+                              i,     c,     size,     place,     where));*/
       if(c == '/'){
          place = place + 1;
          p->current[where] = '\0';
@@ -287,6 +289,7 @@ int next_name(parser *p){
    return 0;
 }
 
+/* returns 0   ....ehh */
 int logzonesize(superblock *s, finder *f){
    assert(fprintf(stderr, "logzonesize()\n"));
    /* left shifting log_zon... into zonesize */
