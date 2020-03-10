@@ -94,9 +94,10 @@ typedef struct __attribute__((__packed__)) part_table {
    part_entry entry[4];
 } part_table;
 
+/* directory entry filled after finding the damn thing */
 typedef struct __attribute__((__packed__)) dir_entry {
-   uint32 t inode             /* inode number */
-   unsigned char name[60]     /* filename string */
+   uint32_t inode;            /* inode number */
+   unsigned char name[60];    /* filename string */
 } dir_entry;
 
 /* used in conjustion with getopt() */
@@ -109,12 +110,12 @@ typedef struct parser {
     char    *dstpath;
     char    current[61];
     int     current_type; /* 0 for file, 1 for folder, and -1 for neither */
-    cher    compare[61];
+    char    compare[61];
 } parser;
 
 /* holds randome other stuff */
 typedef struct finder{
-    off_t offset;
+    off_t   offset;
     int32_t fd;
     int32_t zonesize;
     int32_t last_sector;
@@ -151,7 +152,7 @@ int next_name(parser *p);
 /* gets the type of the file (file or folder) */
 int get_type(parser *p, inode_minix *i);
 /* checks the current name against the current inode/file */
-int check_name(parser *p, inode_minix *i);
+int check_name(superblock *s, finder *f, parser *p, inode_minix *i);
 /* given incorrect input format minls, prints usage */
 void print_usage_ls();
 /* given incorrect input format minget, prints usage */
@@ -163,7 +164,7 @@ int parse_line_ls(struct parser *parse, int argc, char **argv);
 /* specifit parsing functionality for minget */
 int parse_line_get(struct parser *parese, int argc, char **argv);
 /* main verbose function */
-void verbose0(parser *p, finder *f, superblock *s, inode *i);
+void verbose0(part_table *t, parser *p, finder *f, superblock *s, inode_minix *i);
 /* this verbose is reserved for superblocks and inode */
 void verbose1(superblock *s, finder *f, inode_minix *i);
 /* reserved for verbose1, and the parsing, finder and part_table structs */

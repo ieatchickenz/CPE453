@@ -231,14 +231,21 @@ int get_type(parser *p, inode_minix *i){
 }
 
 
-/* "All directories are linked into a tree starting
-   at the root directory at inode 1." ....         ????????     */
-int check_name(parser *p, inode_minix *i){
-   assert(fprintf(stderr, "get_type()\n"));
 
+int check_name(superblock *s, finder *f, parser *p, inode_minix *i){
+   assert(fprintf(stderr, "get_type()\n"));
+   /*  find blocks per zone, multiply by znoe number*/
+   uint32_t bpz, where; /* bpz = blocks perzone */
+   bpz = logzonesize(s, f);
+   where = ((i->zone[0])*bpz)*s->blocksize;
+   lseek(f->fd, where, SEEK_SET);
+   read(f->fd, p->current, sizeof(p->current) );
    return 0;
 }
+/*off_t lseek(int fd, off_t offset, int whence);*/
 
+/* "All directories are linked into a tree starting
+   at the root directory at inode 1." ....         ????????     */
 int check_DIR(){
    assert(fprintf(stderr, "check_DIR()\n"));
 
@@ -463,14 +470,14 @@ void print_usage_get(){
     printf(" exit\n\t-v  verbose --- increase verbosity level\n");
 }
 
-void verbose0(parser *p, finder *f, superblock *s, inode *i){
-   switch(p.verbose){
+void verbose0(part_table *t,parser *p,finder *f,superblock *s,inode_minix *i){
+   switch(p->verbose){
       case(1):
-         verbose1(&s, &f, &i);
+         verbose1(s, f, i);
       break;
 
       case(2):
-         verbose2(&p, &f, &t, &s, &i);
+         verbose2(p, f, t, s, i);
       break;
 
       default:

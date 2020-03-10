@@ -44,9 +44,9 @@ int main(int argc, char **argv)
       exit function that will close the passed in file***********????????*****/
    }
 
-   
+
    if(p.verbose){
-      verbose0(&p, &f, &s, &i);
+      verbose0(&t, &p, &f, &s, &i);
    }
 
 
