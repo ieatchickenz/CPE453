@@ -168,8 +168,8 @@ int check_SB(finder *f, superblock *s){
    }
 
    logzonesize(s, f);
-   f->indirect = malloc(((s->blocksize)/4)*sizeof(int32_t));
-   f->two_indirect = malloc(((s->blocksize)/4)*sizeof(int32_t));
+   f->indirect = calloc(((s->blocksize)/4), sizeof(int32_t));
+   f->two_indirect = calloc(((s->blocksize)/4), sizeof(int32_t));
 
     return 0;
 }
@@ -201,9 +201,13 @@ int fill_root_ino(finder *f, superblock *s, inode_minix *i){
       perror("read");
       return 1;
    }
-
+   
+   /*Also want to fill the indirect and double indirect fields in here*/
+   /*NEED TO SEEK TO INDIRECT BLOCK*/
+   
    return 0;
 }
+
 
 int check_DIR(){
    assert(fprintf(stderr, "check_DIR()\n"));
