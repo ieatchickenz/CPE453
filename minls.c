@@ -24,7 +24,6 @@ int main(int argc, char **argv)
    inode_minix i;
    superblock s;
    int32_t check;
-   int file = 0;
    init_parser(&p);
    init_finder(&f);
    init_part_table(&t);
@@ -57,6 +56,6 @@ int main(int argc, char **argv)
 
    assert(test_next_name(p));
 
-   close(file);
+   close_file(&f);
    return 0;
 }

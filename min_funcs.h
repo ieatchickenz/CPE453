@@ -111,6 +111,8 @@ typedef struct finder{
     int32_t fd;
     int32_t zonesize;
     int32_t last_sector;
+    int32_t *indirect;
+    int32_t *two_indirect;
 } finder;
 
 /* initialize parser structure */
@@ -133,6 +135,8 @@ int check_DIR();
 int check_file();
 /* calculates actual log zone size zonesize = blocksize << log2 zonesize */
 int logzonesize(superblock *s, finder *f);
+/*close and free stuff in finder*/
+void close_file(finder *f);
 /* find and fill the root inode */
 int fill_root_ino(finder *f, superblock *s, inode_minix *i);
 /* will parse out the next names from a path starting with the first*/

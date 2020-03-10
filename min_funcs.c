@@ -168,6 +168,8 @@ int check_SB(finder *f, superblock *s){
    }
 
    logzonesize(s, f);
+   f->indirect = malloc(((s->blocksize)/4)*sizeof(int32_t));
+   f->two_indirect = malloc(((s->blocksize)/4)*sizeof(int32_t));
 
     return 0;
 }
@@ -249,6 +251,12 @@ int logzonesize(superblock *s, finder *f){
    /* left shifting log_zon... into zonesize */
    f->zonesize = (s->blocksize) << s->log_zone_size;
    return 0;
+}
+
+void close_file(finder *f){
+    close(f->fd);
+    free(f->indirect);
+    free(f->two_indirect);
 }
 
 int parse_line_ls(struct parser *parse, int argc, char **argv){
