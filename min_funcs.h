@@ -110,6 +110,7 @@ typedef struct finder{
     off_t offset;
     int32_t fd;
     int32_t zonesize;
+    int32_t last_sector;
 } finder;
 
 /* initialize parser structure */

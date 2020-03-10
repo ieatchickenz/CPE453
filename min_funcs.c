@@ -26,6 +26,7 @@ void init_finder(finder *f){
     f->offset = 0;
     f->fd = 0;
     f->zonesize = 0;
+    f->last_sector = 0;
 }
 
 void init_part_table(part_table *t){
@@ -88,7 +89,9 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
    }
    f->offset = offset;
    /*set the new offset so we can now use this for partition and subpartition*/
-
+    
+    /*find the last sector of the partition*/
+    f->last_sector = part->entry[which].lowsec + part->entry[which].size - 1; 
    return 0;
 }
 
