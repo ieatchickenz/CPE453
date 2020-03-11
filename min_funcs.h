@@ -2,6 +2,8 @@
     Block size: in superblock   *** what?
     Zone size: k × blocksize
     */
+#define YES       1
+#define NO        0
 #define SEC_SIZE  512      /* minix sector size        */
 #define SBOFFSET  1024     /* offset to Super Block or 0x400*/
 #define PARTS     0x1BE    /* partition table location */
@@ -178,7 +180,7 @@ int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, i
 /*this function is to print for minls - returns int to pass message*/
 int ls_file(finder *f, parser *p, superblock *s);
 /* coppies file from source to given destination in users computer */
-void get_file(finder *f, parser *p, superblock *s);
+int get_file(finder *f, parser *p, superblock *s);
 /*copies indirect in finder struct*/
 int fill_indirect(int32_t indirect_zone, superblock *s, finder *f);
 /*copies double indirect in finder struct*/
