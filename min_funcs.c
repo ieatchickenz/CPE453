@@ -597,13 +597,14 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
 }
 
 /*this function is to print for minls - returns int to pass message*/
-int ls_file(int32_t type, finder *f, parser *p, superblock *s){
+int ls_file(finder *f, parser *p, superblock *s){
    /*0 on success and 1 on failure*/
-   uint32_t num_nodes, counter, zone, check, ob;
+   uint32_t num_nodes, counter, zone, check, ob, type;
    inode_minix i, target;
    dir_entry d;
 
-   target = f->target
+   target = f->target;
+   type = get_type(p, &target);
    uint8_t perms[10] = {'-','-','-','-','-','-','-','-','-','-'};
    num_bytes = i->size;
    counter = 0;
@@ -682,6 +683,7 @@ int ls_file(int32_t type, finder *f, parser *p, superblock *s){
          }
       }
       /*FOR DOUBLE INDIRECT*/
+
    }
       /*FOR FILES - target is the file we want, we have the inode*/
    else{
