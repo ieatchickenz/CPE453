@@ -177,6 +177,8 @@ int parse_line_get(struct parser *parese, int argc, char **argv);
 int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, int32_t fd);
 /*this function is to print for minls - returns int to pass message*/
 int ls_file(finder *f, parser *p, superblock *s);
+/* coppies file from source to given destination in users computer */
+get_file(&f, &p, &s);
 /*copies indirect in finder struct*/
 int fill_indirect(int32_t indirect_zone, superblock *s, finder *f);
 /*copies double indirect in finder struct*/
