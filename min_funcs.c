@@ -234,7 +234,7 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
    assert(fprintf(stderr, "find_dir_entry()\n"));
    int type;
    uint32_t where;
-   type = next_name(p)
+   type = next_name(p);
    if(type >= 0){
       /*DIRECT ZONES FIRST*/
       for(int k = 0; k < 7; k++){
@@ -607,7 +607,7 @@ int ls_file(finder *f, parser *p, superblock *s){
    type = get_type(p, &target);
    blocksize = s->blocksize;
    uint8_t perms[10] = {'-','-','-','-','-','-','-','-','-','-'};
-   num_bytes = i->size;
+   num_bytes = i.size;
    counter = 0;
    ob = 0;   /*out of bounds*/
 
