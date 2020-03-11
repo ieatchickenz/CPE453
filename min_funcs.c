@@ -599,7 +599,7 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
 /*this function is to print for minls - returns int to pass message*/
 int ls_file(int32_t type, finder *f, parser *p){
    /*0 on success and 1 on failure*/
-   uint32_t num_nodes, counter, zone, check;
+   uint32_t num_nodes, counter, zone, check, ob;
    inode_minix i, target;
    dir_entry d;
 
@@ -607,6 +607,7 @@ int ls_file(int32_t type, finder *f, parser *p){
    uint8_t perms[10] = {'-','-','-','-','-','-','-','-','-','-'};
    num_bytes = i->size;
    counter = 0;
+   ob = 0;   /*out of bounds*/
 
    if(type < 0){
       return 1;
@@ -628,9 +629,9 @@ int ls_file(int32_t type, finder *f, parser *p){
                                f->zonesize, f->last_sector))<0){
             return 1;
          }
-         lseek(f->fd, zone, SEEK_SET);
-            /*in correct zone now, traverse dir_ents*/
-         while(counter <= (num_bytes/DIR_SIZE) && counter < (f->zonesize/DIR_SIZE)){ /*here counter counts directories*/
+        
+         while(counter <= (num_bytes/DIR_SIZE) && ob < (f->zonesize/DIR_SIZE)){ /*here counter counts directories*/
+            lseek(f->fd, zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
             zone += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
             /*go to inode table and needed inode*/
             lseek(f->fd, offset + ((d->inode)*INO_SIZE), SEEK_SET);
@@ -638,11 +639,11 @@ int ls_file(int32_t type, finder *f, parser *p){
             /*here's where we do the printing*/
             check = fill_perms(&perms, type, target.mode);
             printf("%s\t\t%6u %s\n", perms, i.size, d->name);
-            /*seek back to zone*/
-            lseek(f->fd, zone, SEEK_SET);
+            /*seek back to zone where we left off*/
             counter++;
+            ob++;
          }
-
+         ob = 0;
          if(counter == (num_bytes/DIR_SIZE)){ /*no need to check more blocks*/
             return 0;
          }
