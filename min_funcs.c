@@ -648,7 +648,14 @@ int ls_file(int32_t type, finder *f, parser *p){
             return 0;
          }
       }
+      /*FOR INDIRECT ZONES*/
 
+      /*FOR DOUBLE INDIRECT*/
+   }
+      /*FOR FILES - target is the file we want, we have the inode*/
+   else{
+      printf("")
+   }
 
 
 
