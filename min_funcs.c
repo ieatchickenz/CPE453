@@ -275,7 +275,7 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
                assert(fprintf(stderr, "they match************************************************\n"));
 
                assert(fprintf(stderr,"cur= %s and comp= %s\n",p->current,p->compare));
-               lseek(f->fd, f->offset+((f->dir_ent.inode)*INO_SIZE), SEEK_CUR);
+               lseek(f->fd, f->offset+((f->dir_ent.inode-1)*INO_SIZE), SEEK_CUR);
                read(f->fd, &(f->target), INO_SIZE);
                assert(fprintf(stderr, "target inode is %d *******************************\n", f->dir_ent.inode));
                return 0;
