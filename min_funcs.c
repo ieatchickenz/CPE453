@@ -597,7 +597,7 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
 }
 
 /*this function is to print for minls - returns int to pass message*/
-int ls_file(int32_t type, finder *f, parser *p){
+int ls_file(int32_t type, finder *f, parser *p, superblock *s){
    /*0 on success and 1 on failure*/
    uint32_t num_nodes, counter, zone, check, ob;
    inode_minix i, target;
@@ -609,6 +609,10 @@ int ls_file(int32_t type, finder *f, parser *p){
    counter = 0;
    ob = 0;   /*out of bounds*/
 
+   fill_indirect(target.indirect, s, f);
+   fill_two_indirect(target.two_indirect, s, f);
+    
+    /*START*/
    if(type < 0){
       return 1;
    }
@@ -648,13 +652,41 @@ int ls_file(int32_t type, finder *f, parser *p){
             return 0;
          }
       }
+      
       /*FOR INDIRECT ZONES*/
-
+      for(int k=0; k < 7 , k++){
+         if(!(target.zone[k])){
+            continue;
+         }
+         if((zone = seek_zone(target.zone[k],
+                               f->zonesize, f->last_sector))<0){
+            return 1;
+         }
+        
+         while(counter <= (num_bytes/DIR_SIZE) && ob < (f->zonesize/DIR_SIZE)){ /*here counter counts directories*/
+            lseek(f->fd, zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
+            zone += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
+            /*go to inode table and needed inode*/
+            lseek(f->fd, offset + ((d->inode)*INO_SIZE), SEEK_SET);
+            read(f->fd, &i, sizeof(inode_minix));
+            /*here's where we do the printing*/
+            check = fill_perms(&perms, type, target.mode);
+            printf("%s\t\t%6u %s\n", perms, i.size, d->name);
+            /*seek back to zone where we left off*/
+            counter++;
+            ob++;
+         }
+         ob = 0;
+         if(counter == (num_bytes/DIR_SIZE)){ /*no need to check more blocks*/
+            return 0;
+         }
+      }
       /*FOR DOUBLE INDIRECT*/
    }
       /*FOR FILES - target is the file we want, we have the inode*/
    else{
-      printf("")
+      check = fill_perms(&perms, type, target.mode);
+      printf("%s\t\t%6u %s\n", perms, i.size, d->name);
    }
 
 
