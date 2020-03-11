@@ -91,12 +91,10 @@ typedef struct __attribute__((__packed__)) part_entry {
   uint8_t last_head;    /* head value for last sector	 */
   uint8_t last_sec;     /* sector value + cyl bits for last sector */
   uint8_t last_cyl;     /* track value for last sector	 */
-  uint32_t lowsec;       /* logical first sector		 */
-  uint32_t size;         /* size of partition in sectors	 */
+  uint32_t lowsec;      /* logical first sector		 */
+  uint32_t size;        /* size of partition in sectors	 */
 } part_entry;
-/*for(int h = 0; h<2; h++){
-   assert(fprintf(stderr, "f->dir_ent.name[%d] = %d, p->current[%d] = %d\n",h, (f->dir_ent.name)[h], h, p->current[h]));
-}*/
+
 /* total partition table */
 typedef struct __attribute__((__packed__)) part_table {
    part_entry entry[4];
@@ -132,6 +130,7 @@ typedef struct finder{
     dir_entry     dir_ent;
     int32_t       where;
     inode_minix   target;
+    off_t         partoff;
 } finder;
 
 /* initialize parser structure */
@@ -148,10 +147,6 @@ off_t find_offset(int32_t which, struct part_table *part);
 uint32_t find_filesystem(parser *p, finder *f, part_table *part);
 /* check for a valid Minix superblock */
 int check_SB(finder *f, superblock *s);
-/* check that directories being listed really are directories */
-int check_DIR();
-/* check that files being copied really are regular files */
-int check_file();
 /* calculates actual log zone size zonesize = blocksize << log2 zonesize */
 int logzonesize(superblock *s, finder *f);
 /*close and free stuff in finder*/
@@ -176,7 +171,8 @@ int parse_line_ls(struct parser *parse, int argc, char **argv);
 /* specifit parsing functionality for minget */
 int parse_line_get(struct parser *parese, int argc, char **argv);
 /*finds and checks if zonesize is valid*/
-int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, int32_t fd);
+int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector,
+   int32_t fd);
 /*this function is to print for minls - returns int to pass message*/
 int ls_file(finder *f, parser *p, superblock *s);
 /* coppies file from source to given destination in users computer */

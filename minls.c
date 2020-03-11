@@ -29,14 +29,16 @@ int main(int argc, char **argv)
       exit function that will close the passed in file***********????????*****/
    }
 
-   
 
-   find_target(&s, &f, &p, &i);
-   
+
+   if(find_target(&s, &f, &p, &i)){
+      return 1;
+   }
+
    if(p.verbose){
       verbose0(&t, &p, &f, &s, &(f.target));
    }
-   
+
    ls_file(&f, &p, &s);
 
    close_file(&f);

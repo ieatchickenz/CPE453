@@ -28,6 +28,7 @@ void init_finder(finder *f){
     f->fd = 0;
     f->zonesize = 0;
     f->last_sector = 0;
+    f->partoff = 0;
 }
 
 void init_part_table(part_table *t){
@@ -88,7 +89,8 @@ uint32_t check_part(int32_t which, finder *f, part_table *part){
    if( -1 == (offset = find_offset(which, part)) ){
        return 1;
    }
-   f->offset = offset;
+   f->offset  = offset;
+   f->partoff = offset;
    /*set the new offset so we can now use this for partition and subpartition*/
 
 
@@ -236,13 +238,21 @@ int get_type(parser *p, inode_minix *i){
    }
 }
 
-
+//    run = 0;
+//    p->srcpath = ".";
+//    p->current[0] = '.';
+//    p->current[1] = '\0';
 /* returns 0 on success an 1 on failure with error message*/
 int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
    assert(fprintf(stderr, "find_target()\n"));
    int run = YES, last = NO;
-   int32_t zone; /******************************** WHAT EXACTLY IS "zone" ?********************************************************************/
+   uint32_t zone, loopVar = 7; /******************************** WHAT EXACTLY IS "zone" ?********************************************************************/
    /*zone represents the offset to the next zone you're looking for.*/
+   if(NULL == memcpy(&(f->target),i,INO_SIZE)){
+      perror("memcpy()");
+      return 1;
+   }
+
    if((NULL != (p->srcpath))){
       assert(fprintf(stderr, "srcpath is not NULL!!!\n"));
       run = next_name(p);
@@ -250,22 +260,17 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
          last = YES;
       }
    } else{
-      run = 0;
-      p->srcpath = ".";
-      p->current[0] = '.';
-      p->current[1] = '\0';
-   }
+
    /* update target inode */
-   if(NULL == memcpy(&(f->target),i,INO_SIZE)){
-      perror("memcpy()");
-      return 1;
+
+         return 0;
    }
 
 /*look at line 885*/
    /* if it is a file or folder, proceed */
    do{
       /*DIRECT ZONES FIRST*/
-      for(int k = 0; k < 7; k++){
+      for(int k = 0; k < loopVar; k++){
          /* move on to next zone if empty */
          if(!(f->target.zone[k])){
             assert(fprintf(stderr, "zone # %d is blank\n",k));
@@ -281,7 +286,7 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
          /* for each zone run through and look at each etry obviously only if directory */
          for(uint32_t j = 0; j < (f->target.size)/DIR_SIZE; j++){
             /* seek to  */
-            lseek(f->fd, zone, SEEK_SET);
+            lseek(f->fd, f->partoff + zone, SEEK_SET);
             zone += read( f->fd, &(f->dir_ent), sizeof(struct dir_entry));
             /* coppying the current name into nulltermed array of 61 for easy comparison */
             memcpy( (p->compare), &(f->dir_ent.name), sizeof(p->compare)-1 );
@@ -313,12 +318,13 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
          }
          assert(fprintf(stderr, "Done with directory sized for loop\n"));
       }
-
+      /*INDIRECT NEXT ... */
+      loopVar = (s->blocksize)/4;
       assert(fprintf(stderr, "Done with 1-7 for loop\n"));
       /*INDIRECT NEXT ... */
-      for(int k = 0; k < (s->blocksize)/4; k++){
-
-      }
+      // for(int k = 0; k < (s->blocksize)/4; k++){
+      //
+      // }
       /*DOUBLE INDIRECT*/
 
    }while(run || last);
@@ -328,8 +334,8 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
 
 /*finds and checks if zonesize is valid*/
 int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, int32_t fd){
-   if(zone_num != 0)
-      assert(fprintf(stderr, "seek_zone()  zone_num: %u\n", zone_num));
+   //if(zone_num != 0)
+      //assert(fprintf(stderr, "seek_zone()  zone_num: %u\n", zone_num));
    /*returns -1 if out of bounds*/
    uint32_t where, cutoff;
 
@@ -339,12 +345,12 @@ int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, i
    else{
       cutoff = lseek(fd, 0, SEEK_END);
    }
-   /*assert(fprintf(stderr, "seek_zone()  cutoff: %u\n", cutoff));*/
+   //assert(fprintf(stderr, "seek_zone()  cutoff: %u\n", cutoff));
    if((where = zone_num * zone_size) > cutoff){
-      fprintf(stderr, "Zone is out of bounds. Zone: %u\n", where);
+      //fprintf(stderr, "Zone is out of bounds. Zone: %u\n", where);
        return -1;
    }
-
+   //assert(fprintf(stderr, "seek_zone()  zone_num: %u\n", zone_num));
    return where;
 }
 
@@ -352,16 +358,7 @@ int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, i
 
 /* "All directories are linked into a tree starting
    at the root directory at inode 1." ....         ????????     */
-int check_DIR(){
-   assert(fprintf(stderr, "check_DIR()\n"));
 
-   return 0;
-}
-
-int check_file(){
-   assert(fprintf(stderr, "check_file()\n"));
-   return 0;
-}
 
 /* returns 1 if there's an additional name, -1 if name > 60, and 0 when done */
 int next_name(parser *p){
@@ -698,9 +695,9 @@ int ls_file(finder *f, parser *p, superblock *s){
       }
       /*FOR DIRECT ZONES*/
       for(int k=0; k < 7 ; k++){
-         if(!(target.zone[k])){
-            continue;
-         }
+         // if(!(target.zone[k])){
+         //    continue;
+         // }
 
          if((zone = seek_zone(target.zone[k],f->zonesize,f->last_sector, f->fd))<0){
             assert(fprintf(stderr, "Offset: %u\n",f->zonesize));
@@ -708,7 +705,7 @@ int ls_file(finder *f, parser *p, superblock *s){
          }
 
          while(counter <= (num_bytes/DIR_SIZE) && ob < (f->zonesize/DIR_SIZE)){ /*here counter counts directories*/
-            lseek(f->fd, zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/\
+            lseek(f->fd, f->partoff + zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/\
 
             zone += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
 
@@ -720,7 +717,6 @@ int ls_file(finder *f, parser *p, superblock *s){
                type = get_type(p, &i);
                check = fill_perms(perms, type, i.mode);
                printf("%s\t\t%6u %s\n", perms, i.size, d.name);
-               /*seek back to zone where we left off*/
             }
             counter++;
             ob++;
@@ -743,7 +739,7 @@ int ls_file(finder *f, parser *p, superblock *s){
          }
 
          while(counter <= (num_bytes/DIR_SIZE) && ob < (f->zonesize/DIR_SIZE)){ /*here counter counts directories*/
-            lseek(f->fd, zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
+            lseek(f->fd, f->partoff + zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
             zone += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
             /*go to inode table and needed inode*/
             lseek(f->fd, f->offset + ((d.inode)*INO_SIZE), SEEK_SET);
@@ -775,17 +771,18 @@ int ls_file(finder *f, parser *p, superblock *s){
              }
 
             while(counter <= (num_bytes/DIR_SIZE) && ob < (f->zonesize/DIR_SIZE)){ /*here counter counts directories*/
-                lseek(f->fd, zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
+                lseek(f->fd, f->partoff + zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
                 zone += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
                 /*go to inode table and needed inode*/
-                lseek(f->fd, f->offset + ((d.inode)*INO_SIZE), SEEK_SET);
-                read(f->fd, &i, sizeof(inode_minix));
-                /*here's where we do the printing*/
-                type = get_type(p, &i);
-                check = fill_perms(perms, type, target.mode);
-                printf("%s\t\t%6u %s\n", perms, i.size, d.name);
-                memset(perms, '-', 10);
-               /*seek back to zone where we left off*/
+
+                if(d.inode){
+                   lseek(f->fd, f->offset + ((d.inode)*INO_SIZE), SEEK_SET);
+                   read(f->fd, &i, sizeof(inode_minix));
+                   /*here's where we do the printing*/
+                   type = get_type(p, &i);
+                   check = fill_perms(perms, type, target.mode);
+                   printf("%s\t\t%6u %s\n", perms, i.size, d.name);
+                }
                 counter++;
                 ob++;
             }
