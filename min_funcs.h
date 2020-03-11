@@ -160,7 +160,8 @@ int fill_root_ino(finder *f, superblock *s, inode_minix *i);
 int next_name(parser *p);
 /* gets the type of the file (file or folder) */
 int get_type(parser *p, inode_minix *i);
-/* checks the current name against the current inode/file */
+/* traverses a given path if provided, until the last name in the path is
+   reached, then updates the target inode with to that. */
 int find_target(superblock *s, finder *f, parser *p, inode_minix *i);
 /* given incorrect input format minls, prints usage */
 void print_usage_ls();

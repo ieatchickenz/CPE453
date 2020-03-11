@@ -237,62 +237,69 @@ int get_type(parser *p, inode_minix *i){
 }
 
 
-/* fills current name in the parser struct, must send in root inode*/
+/* returns 0 on success an 1 on failure with error message*/
 int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
    assert(fprintf(stderr, "find_target()\n"));
-   int type;
-   int32_t where;
+   int run;
+   int32_t zone; /******************************** WHAT EXACTLY IS "zone" ?********************************************************************/
    if((NULL != (p->srcpath))){
       assert(fprintf(stderr, "srcpath is not NULL!!!\n"));
-      type = next_name(p);
+      run = next_name(p);
    } else{
-      type = 0;
+      run = 0;
       p->srcpath = ".";
       p->current[0] = '.';
       p->current[1] = '\0';
    }
-   if(type >= 0){
+   /* update target inode */
+   if(NULL == memcpy(&(f->target),i,INO_SIZE)){
+      perror("memcpy()");
+      return 1;
+   }
+   /* if it is a file or folder, proceed */
+   while(run >= 0){
       /*DIRECT ZONES FIRST*/
       for(int k = 0; k < 7; k++){
          /* move on to next zone if empty */
-         if(!(i->zone[k])){
+         if(!(f->target.zone[k])){
             assert(fprintf(stderr, "zone # %d is blank\n",k));
             continue;
          }
-         /* find blocks per zone, multiply by znoe number */
-         /*uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, parser *p, int32_t fd*/
-         if(0 > (where = seek_zone(i->zone[k], f->zonesize, f->last_sector, f->fd))){
-            assert(fprintf(stderr, "seek_zone shit the bed!!!!!!!!!!!!\n"));
+         /* find blocks per zone, multiply by zone number */
+         if(0 < (zone = seek_zone(f->target.zone[k], f->zonesize, f->last_sector, f->fd))){
+            assert(fprintf(stderr, "seek_zone shit the bed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"));
             return 1;
          }
          /* for each zone run through and look at each etry */
-         for(uint32_t j = 0; j < (i->size)/DIR_SIZE; j++){
-            lseek(f->fd, where + (j*4), SEEK_SET);
+         for(uint32_t j = 0; j < (f->target.size)/DIR_SIZE; j++){
+            /* seek to  */
+            lseek(f->fd, zone + (j*4), SEEK_SET);
             read( f->fd, &(f->dir_ent), sizeof(struct dir_entry) );
             assert(fprintf(stderr, "f->dir_ent.name = %s\n",f->dir_ent.name));
+            /* coppying the current name into nulltermed array of 61 for easy comparison */
             memcpy( (p->compare), &(f->dir_ent.name), sizeof(p->compare)-1 );
+            /* found current name in path */
             if(!strcmp( p->current, p->compare )){
-               assert(fprintf(stderr, "they match************************************************\n"));
-
+               assert(fprintf(stderr, "they match****************************************\n"));
                assert(fprintf(stderr,"cur= %s and comp= %s\n",p->current,p->compare));
+               /* seek to offset of root inode + ((the inode #)X(inode size)) */
                lseek(f->fd, f->offset+((f->dir_ent.inode-1)*INO_SIZE), SEEK_SET);
+               /* update target inode */
                read(f->fd, &(f->target), INO_SIZE);
                assert(fprintf(stderr, "target inode is %d *******************************\n", f->dir_ent.inode));
-               return 0;
+               /*target found and last name in path*/
+               if(run){
+                  run = next_name(p);
+                  continue;
+               }
+                  break;
             }else{
                assert(fprintf(stderr, "current and cir.name mismatch\n"));
-            }
-
-
-            /* if current is a directory, keep going, otherwise return */
-            if(get_type(p, i)){ /*if negative returned bail, if 0 it's is last or a file*/
-
-
             }
          }
       }
 
-      /*INDIRECT NEXT*/
+      /*INDIRECT NEXT ... */
       for(int k = 0; k < (s->blocksize)/4; k++){
 
       }
@@ -300,6 +307,8 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
    }
    return 0;
 }
+
+
 /*finds and checks if zonesize is valid*/
 int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, int32_t fd){
    assert(fprintf(stderr, "seek_zone()  zone_num: %u\n", zone_num));
@@ -640,7 +649,6 @@ int ls_file(finder *f, parser *p, superblock *s){
    int32_t zone, type;
    inode_minix i, target;
    dir_entry d;
-
    target = f->target;
    type = get_type(p, &target);
    blocksize = s->blocksize;
@@ -676,7 +684,7 @@ int ls_file(finder *f, parser *p, superblock *s){
          if(!(target.zone[k])){
             continue;
          }
-         
+
          if((zone = seek_zone(target.zone[k],f->zonesize,f->last_sector, f->fd))<0){
             assert(fprintf(stderr, "Offset: %u\n",f->zonesize));
             return 1;
@@ -784,6 +792,7 @@ void get_file(finder *f, parser *p, superblock *s){
    int32_t zone, type;
    inode_minix i, target;
    dir_entry d;
+   blocksize = s->blocksize; /* ALEX!   ... David did this because block size was uninitialized hope it's right */
 
    target = f->target;
    type = get_type(p, &target);
@@ -803,7 +812,7 @@ void get_file(finder *f, parser *p, superblock *s){
             if(!(*(f->indirect + k))){
                continue;
              }
-             
+
           }
       }
 }
