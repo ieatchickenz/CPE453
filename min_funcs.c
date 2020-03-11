@@ -276,8 +276,8 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
          /* for each zone run through and look at each etry */
          for(uint32_t j = 0; j < (f->target.size)/DIR_SIZE; j++){
             /* seek to  */
-            lseek(f->fd, zone + (j*4), SEEK_SET);
-            read( f->fd, &(f->dir_ent), sizeof(struct dir_entry) );
+            lseek(f->fd, zone, SEEK_SET);
+            zone += read( f->fd, &(f->dir_ent), sizeof(struct dir_entry));
             assert(fprintf(stderr, "f->dir_ent.name = %s\n",f->dir_ent.name));
             /* coppying the current name into nulltermed array of 61 for easy comparison */
             memcpy( (p->compare), &(f->dir_ent.name), sizeof(p->compare)-1 );
