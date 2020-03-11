@@ -176,7 +176,7 @@ int check_SB(finder *f, superblock *s){
 /* pizza at 6:36 */
 /*ONLY CALL THIS ONCE*/
 int fill_root_ino(finder *f, superblock *s, inode_minix *i){
-   assert(fprintf(stderr, "fill_ino()\n"));
+   assert(fprintf(stderr, "fill_root_ino()\n"));
    uint32_t file = f->fd;
    uint32_t imap_size = 0;
    uint32_t zmap_size = 0;
@@ -231,7 +231,7 @@ int get_type(parser *p, inode_minix *i){
 /* fills current name in the parser struct, **must send in current inode**/
 /* only ecepts inodes */
 int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
-   assert(fprintf(stderr, "find_dir_entry()\n"));
+   assert(fprintf(stderr, "find_target()\n"));
    int type;
    uint32_t where;
    type = next_name(p);
@@ -278,6 +278,7 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
 
 /*finds and checks if zonesize is valid*/
 int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector){
+   assert(fprintf(stderr, "seek_zone()\n"));
    /*returns -1 if out of bounds*/
       int32_t where, cutoff;
       cutoff = (last_sector+1)*512;
@@ -422,6 +423,7 @@ int parse_line_ls(struct parser *parse, int argc, char **argv){
 
 /*coppies indirect in finder struct*/
 int fill_indirect(int32_t indirect_zone, superblock *s, finder *f){
+   assert(fprintf(stderr, "fill_indirect()\n"));
    /*0 for success 1 for failure*/
    int32_t indirect = seek_zone(indirect_zone, f->zonesize, f->last_sector);
    if( indirect < 0 ){
@@ -445,6 +447,7 @@ int fill_indirect(int32_t indirect_zone, superblock *s, finder *f){
 
 /*copies double indirect in finder struct*/
 int fill_two_indirect(int32_t two_indirect_zone, superblock *s, finder *f){
+   assert(fprintf(stderr, "fill_two_indirect()\n"));
    /*0 for success 1 for failure*/
    int32_t two_indirect = seek_zone(two_indirect_zone, f->zonesize, f->last_sector);
    if(two_indirect < 0){
@@ -468,6 +471,7 @@ int fill_two_indirect(int32_t two_indirect_zone, superblock *s, finder *f){
 
 /*define perms as ['-'] * 12 before calling this function*/
 int fill_perms(char *perms, int32_t type, mode_t mode){
+   assert(fprintf(stderr, "fill_perms()\n"));
    /*returns 0 on success and 1 on failure*/
 
    /*check if dir, file, or niether*/
@@ -599,6 +603,7 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
 
 /*this function is to print for minls - returns int to pass message*/
 int ls_file(finder *f, parser *p, superblock *s){
+   assert(fprintf(stderr, "ls_file()\n"));
    /*0 on success and 1 on failure*/
    uint32_t num_bytes, counter, check, ob, blocksize;
    int32_t zone, type;
