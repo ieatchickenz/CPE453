@@ -654,11 +654,11 @@ int ls_file(int32_t type, finder *f, parser *p, superblock *s){
       }
       
       /*FOR INDIRECT ZONES*/
-      for(int k=0; k < 7 , k++){
-         if(!(target.zone[k])){
+      for(k=0; k < s->(blocksize/4) , k++){
+         if(!(*(f->indirect + k))){
             continue;
          }
-         if((zone = seek_zone(target.zone[k],
+         if((zone = seek_zone(*(f->indirect + k),
                                f->zonesize, f->last_sector))<0){
             return 1;
          }
