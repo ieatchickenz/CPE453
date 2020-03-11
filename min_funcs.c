@@ -516,6 +516,7 @@ int fill_perms(char *perms, int32_t type, mode_t mode){
       *(perms + 9) = 'x';
    }
 
+    return 0;
 }
 
 int parse_line_get(struct parser *parse, int argc, char **argv){
@@ -599,14 +600,14 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
 /*this function is to print for minls - returns int to pass message*/
 int ls_file(finder *f, parser *p, superblock *s){
    /*0 on success and 1 on failure*/
-   uint32_t num_nodes, counter, zone, check, ob, type, blocksize;
+   uint32_t num_bytes, counter, zone, check, ob, type, blocksize;
    inode_minix i, target;
    dir_entry d;
 
    target = f->target;
    type = get_type(p, &target);
    blocksize = s->blocksize;
-   uint8_t perms[10] = {'-','-','-','-','-','-','-','-','-','-'};
+   char perms[10] = {'-','-','-','-','-','-','-','-','-','-'};
    num_bytes = i.size;
    counter = 0;
    ob = 0;   /*out of bounds*/
@@ -648,7 +649,7 @@ int ls_file(finder *f, parser *p, superblock *s){
             read(f->fd, &i, sizeof(inode_minix));
             /*here's where we do the printing*/
             check = fill_perms(&perms, type, target.mode);
-            printf("%s\t\t%6u %s\n", perms, i.size, d->name);
+            printf("%s\t\t%6u %s\n", perms, i.size, d.name);
             /*seek back to zone where we left off*/
             counter++;
             ob++;
@@ -677,7 +678,7 @@ int ls_file(finder *f, parser *p, superblock *s){
             read(f->fd, &i, sizeof(inode_minix));
             /*here's where we do the printing*/
             check = fill_perms(&perms, type, target.mode);
-            printf("%s\t\t%6u %s\n", perms, i.size, d->name);
+            printf("%s\t\t%6u %s\n", perms, i.size, d.name);
             /*seek back to zone where we left off*/
             counter++;
             ob++;
@@ -722,9 +723,10 @@ int ls_file(finder *f, parser *p, superblock *s){
       /*FOR FILES - target is the file we want, we have the inode*/
    else{
       check = fill_perms(&perms, type, target.mode);
-      printf("%s\t\t%6u %s\n", perms, i.size, d->name);
+      printf("%s\t\t%6u %s\n", perms, i.size, d.name);
       return 0;
    }
+   return 0;
 }
 
 
