@@ -845,6 +845,23 @@ void verbose2(parser *p, finder *f, part_table *part, superblock *s,
 }
 
 
+int test_next_name(parser *p){
+   /*assert(test_next_name(p));*/
+   /* 012345678901234567890123456789012345678901234567890123456789 */
+   /* This is a 60 character string to see if the cap is at real . */
+   int status;
+   while(1){
+      status = next_name(p);
+      printf("the status is %d\n", status);
+      if( status != 0 && status > 0 )
+         printf( "next_name returned %s\n", p->current );
+      else
+         break;
+   }
+   if(status == 0)
+      printf( "next_name returned %s\n", p->current );
+   return 1;
+}
 
 
 
