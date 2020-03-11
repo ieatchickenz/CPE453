@@ -243,14 +243,14 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
             continue;
          }
          /* find blocks per zone, multiply by znoe number */
-         if(where = seek_zone(i->zone[k], f->zonesize, f->last_sector)) < 0){
+         if((where = seek_zone(i->zone[k], f->zonesize, f->last_sector))){
                return 1;
          }
          /* for each zone run through and look at each etry */
-         for(int j = 0; j < (i->size)/DIR_SIZE; j++){
+         for(uint32_t j = 0; j < (i->size)/DIR_SIZE; j++){
             lseek(f->fd, where + (j*4), SEEK_SET);
             read(f->fd, &(f->dir_ent), sizeof(struct dir_entry) );
-            if(!memcmp(current, f->dir_ent.name, sizeof(p->compare)-1) ){
+            if(!memcmp(p->current, f->dir_ent.name, sizeof(p->compare)-1) ){
                memcpy((p->compare),&(f->dir_ent.name),sizeof(p->compare)-1);
                assert(fprintf(stderr, "current %s, compare %s\n",p->current,
                p->compare));
@@ -423,8 +423,8 @@ int parse_line_ls(struct parser *parse, int argc, char **argv){
 /*coppies indirect in finder struct*/
 int fill_indirect(int32_t indirect_zone, superblock *s, finder *f){
    /*0 for success 1 for failure*/
-   uint32_t indirect = seek_zone(indirect_zone, f->zonesize, f->last_sector);
-   if(indirect < 0){
+   int32_t indirect = seek_zone(indirect_zone, f->zonesize, f->last_sector);
+   if( indirect < 0 ){
       return 1;
    }
 
@@ -446,7 +446,7 @@ int fill_indirect(int32_t indirect_zone, superblock *s, finder *f){
 /*copies double indirect in finder struct*/
 int fill_two_indirect(int32_t two_indirect_zone, superblock *s, finder *f){
    /*0 for success 1 for failure*/
-   uint32_t two_indirect = seek_zone(two_indirect_zone, f->zonesize, f->last_sector);
+   int32_t two_indirect = seek_zone(two_indirect_zone, f->zonesize, f->last_sector);
    if(two_indirect < 0){
       return 1;
    }
@@ -600,7 +600,8 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
 /*this function is to print for minls - returns int to pass message*/
 int ls_file(finder *f, parser *p, superblock *s){
    /*0 on success and 1 on failure*/
-   uint32_t num_bytes, counter, zone, check, ob, type, blocksize;
+   uint32_t num_bytes, counter, check, ob, blocksize;
+   int32_t zone, type;
    inode_minix i, target;
    dir_entry d;
 
@@ -618,7 +619,7 @@ int ls_file(finder *f, parser *p, superblock *s){
    if((check = fill_two_indirect(target.two_indirect, s, f))){
        return 1;
    }
-    
+
     /*START*/
    if(type < 0){
       return 1;
@@ -632,23 +633,22 @@ int ls_file(finder *f, parser *p, superblock *s){
          printf("/:\n");
       }
       /*FOR DIRECT ZONES*/
-      for(int k=0; k < 7 , k++){
+      for(int k=0; k < 7 ; k++){
          if(!(target.zone[k])){
             continue;
          }
-         if((zone = seek_zone(target.zone[k],
-                               f->zonesize, f->last_sector))<0){
+         if((zone = seek_zone(target.zone[k],f->zonesize,f->last_sector))<0){
             return 1;
          }
-        
+
          while(counter <= (num_bytes/DIR_SIZE) && ob < (f->zonesize/DIR_SIZE)){ /*here counter counts directories*/
             lseek(f->fd, zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
             zone += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
             /*go to inode table and needed inode*/
-            lseek(f->fd, offset + ((d->inode)*INO_SIZE), SEEK_SET);
+            lseek(f->fd, f->offset + ((d.inode)*INO_SIZE), SEEK_SET);
             read(f->fd, &i, sizeof(inode_minix));
             /*here's where we do the printing*/
-            check = fill_perms(&perms, type, target.mode);
+            check = fill_perms(perms, type, target.mode);
             printf("%s\t\t%6u %s\n", perms, i.size, d.name);
             /*seek back to zone where we left off*/
             counter++;
@@ -659,9 +659,9 @@ int ls_file(finder *f, parser *p, superblock *s){
             return 0;
          }
       }
-      
+
       /*FOR INDIRECT ZONES*/
-      for(k=0; k < (blocksize/4) , k++){
+      for(uint32_t k = 0; k < (blocksize/4) ; k++){
          if(!(*(f->indirect + k))){
             continue;
          }
@@ -669,15 +669,15 @@ int ls_file(finder *f, parser *p, superblock *s){
                                f->zonesize, f->last_sector))<0){
             return 1;
          }
-        
+
          while(counter <= (num_bytes/DIR_SIZE) && ob < (f->zonesize/DIR_SIZE)){ /*here counter counts directories*/
             lseek(f->fd, zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
             zone += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
             /*go to inode table and needed inode*/
-            lseek(f->fd, offset + ((d->inode)*INO_SIZE), SEEK_SET);
+            lseek(f->fd, f->offset + ((d.inode)*INO_SIZE), SEEK_SET);
             read(f->fd, &i, sizeof(inode_minix));
             /*here's where we do the printing*/
-            check = fill_perms(&perms, type, target.mode);
+            check = fill_perms(perms, type, target.mode);
             printf("%s\t\t%6u %s\n", perms, i.size, d.name);
             /*seek back to zone where we left off*/
             counter++;
@@ -689,26 +689,25 @@ int ls_file(finder *f, parser *p, superblock *s){
          }
       }
       /*FOR DOUBLE INDIRECT*/
-      for(int l=0, l < (blocksize/4), l++){
+      for(uint32_t l = 0; l < (blocksize/4); l++){
           fill_indirect(*(f->two_indirect + l), s, f);
-          for(k=0; k < (blocksize/4) , k++){/*go through indirect as necesssry*/
+          for(uint32_t k = 0; k < (blocksize/4) ; k++){/*go through indirect as necesssry*/
             if(!(*(f->indirect + k))){
                continue;
              }
-             if((zone = seek_zone(*(f->indirect + k),
-                               f->zonesize, f->last_sector))<0){
+             if((zone=seek_zone(*(f->indirect+k),f->zonesize,f->last_sector))<0){
                return 1;
              }
-        
+
             while(counter <= (num_bytes/DIR_SIZE) && ob < (f->zonesize/DIR_SIZE)){ /*here counter counts directories*/
                 lseek(f->fd, zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
                 zone += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
                 /*go to inode table and needed inode*/
-                lseek(f->fd, offset + ((d->inode)*INO_SIZE), SEEK_SET);
+                lseek(f->fd, f->offset + ((d.inode)*INO_SIZE), SEEK_SET);
                 read(f->fd, &i, sizeof(inode_minix));
                 /*here's where we do the printing*/
-                check = fill_perms(&perms, type, target.mode);
-                printf("%s\t\t%6u %s\n", perms, i.size, d->name);
+                check = fill_perms(perms, type, target.mode);
+                printf("%s\t\t%6u %s\n", perms, i.size, d.name);
                /*seek back to zone where we left off*/
                 counter++;
                 ob++;
@@ -722,7 +721,7 @@ int ls_file(finder *f, parser *p, superblock *s){
    }
       /*FOR FILES - target is the file we want, we have the inode*/
    else{
-      check = fill_perms(&perms, type, target.mode);
+      check = fill_perms(perms, type, target.mode);
       printf("%s\t\t%6u %s\n", perms, i.size, d.name);
       return 0;
    }

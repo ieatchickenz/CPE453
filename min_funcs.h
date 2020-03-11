@@ -106,22 +106,22 @@ typedef struct __attribute__((__packed__)) dir_entry {
 
 /* used in conjustion with getopt() */
 typedef struct parser {
-    int32_t partition;
-    int32_t sector;
-    uint32_t verbose;
-    char    *imagefile;
-    char    *srcpath; /*used for path in minls*/
-    char    *dstpath;
-    char    current[61];
-    int     current_type; /* 0 for file, 1 for folder, and -1 for neither */
-    char    compare[61];
+    int32_t    partition;
+    int32_t    sector;
+    uint32_t   verbose;
+    char       *imagefile;
+    char       *srcpath; /*used for path in minls*/
+    char       *dstpath;
+    char       current[61];
+    int        current_type; /* 0 for file, 1 for folder, and -1 for neither */
+    char       compare[61];
 } parser;
 
 /* holds randome other stuff */
 typedef struct finder{
     off_t         offset;
     int32_t       fd;
-    int32_t       zonesize;         /* zone size in bytes*/
+    uint32_t      zonesize;         /* zone size in bytes*/
     int32_t       last_sector;
     int32_t       *indirect;
     int32_t       *two_indirect;

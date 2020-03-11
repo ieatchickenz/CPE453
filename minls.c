@@ -1,24 +1,5 @@
 #include "min_funcs.h"
 
-int test_next_name(parser p){
-   int status;
-   while(1){
-      status = next_name(&p);
-      printf("the status is %d\n", status);
-      if( status != 0 && status > 0 )
-         printf( "next_name returned %s\n", p.current );
-      else
-         break;
-   }
-   if(status == 0)
-      printf( "next_name returned %s\n", p.current );
-   return 1;
-}
-
-/* 012345678901234567890123456789012345678901234567890123456789 */
-/* This is a 60 character string to see if the cap is at real . */
-
-
 int main(int argc, char **argv)
 {
    assert(fprintf(stderr, "ASSERTION_ON\n"));
@@ -48,15 +29,11 @@ int main(int argc, char **argv)
       exit function that will close the passed in file***********????????*****/
    }
 
-
    if(p.verbose){
       verbose0(&t, &p, &f, &s, &i);
    }
 
-
-   /*assert(test_next_name(p));*/
-   next_name(&p);
-   fill_dir_entry(&s, &f, &p, &i);
+   find_target(&s, &f, &p, &i);
 
    close_file(&f);
    return 0;
