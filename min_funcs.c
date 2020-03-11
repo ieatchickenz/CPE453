@@ -242,6 +242,7 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
    assert(fprintf(stderr, "find_target()\n"));
    int run;
    int32_t zone; /******************************** WHAT EXACTLY IS "zone" ?********************************************************************/
+   /*zone represents the offset to the next zone you're looking for.*/
    if((NULL != (p->srcpath))){
       assert(fprintf(stderr, "srcpath is not NULL!!!\n"));
       run = next_name(p);
@@ -266,7 +267,9 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
             continue;
          }
          /* find blocks per zone, multiply by zone number */
-         if(0 < (zone = seek_zone(f->target.zone[k], f->zonesize, f->last_sector, f->fd))){
+         /*DAVID ... the problem was that you were checking 0 < zone rather than 0 > zone
+           zone returns -1 if it fails*/
+         if(0 > (zone = seek_zone(f->target.zone[k], f->zonesize, f->last_sector, f->fd))){
             assert(fprintf(stderr, "seek_zone shit the bed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"));
             return 1;
          }
