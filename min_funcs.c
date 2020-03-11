@@ -275,7 +275,7 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
                assert(fprintf(stderr, "they match************************************************\n"));
 
                assert(fprintf(stderr,"cur= %s and comp= %s\n",p->current,p->compare));
-               lseek(f->fd, f->offset+((f->dir_ent.inode-1)*INO_SIZE), SEEK_CUR);
+               lseek(f->fd, f->offset+((f->dir_ent.inode-1)*INO_SIZE), SEEK_SET);
                read(f->fd, &(f->target), INO_SIZE);
                assert(fprintf(stderr, "target inode is %d *******************************\n", f->dir_ent.inode));
                return 0;
@@ -302,7 +302,7 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
 }
 /*finds and checks if zonesize is valid*/
 int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, int32_t fd){
-   assert(fprintf(stderr, "seek_zone()  last_sector: %u\n", last_sector));
+   assert(fprintf(stderr, "seek_zone()  zone_num: %u\n", zone_num));
 
    /*returns -1 if out of bounds*/
       uint32_t where, cutoff;
@@ -315,7 +315,7 @@ int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, i
       }
       assert(fprintf(stderr, "seek_zone()  cutoff: %u\n", cutoff));
       if((where = zone_num * zone_size) > cutoff){
-         fprintf(stderr, "Zone is out of bounds.\n");
+         fprintf(stderr, "Zone is out of bounds. Zone: %u\n", where);
           return -1;
       }
 
@@ -648,10 +648,12 @@ int ls_file(finder *f, parser *p, superblock *s){
    num_bytes = target.size;
    counter = 0;
    ob = 0;   /*out of bounds*/
-
-   if((check = fill_indirect(target.indirect, s, f))){
+   zone = 0;
+   assert(fprintf(stderr, "YUH: %u\n", target.indirect));
+   if((check = fill_indirect(target.indirect, s, f))){/*FAILING HERE WHY*/
        return 1;
    }
+   assert(fprintf(stderr, "HE THEREEEE\n"));
    if((check = fill_two_indirect(target.two_indirect, s, f))){
        return 1;
    }
@@ -662,6 +664,7 @@ int ls_file(finder *f, parser *p, superblock *s){
    }
 
    if(type){  /*DIRECTORY*/
+   assert(fprintf(stderr, "HE THEREEEE\n"));
       if(p->srcpath){
          printf("%s:\n", p->srcpath);
       }
@@ -673,7 +676,9 @@ int ls_file(finder *f, parser *p, superblock *s){
          if(!(target.zone[k])){
             continue;
          }
+         
          if((zone = seek_zone(target.zone[k],f->zonesize,f->last_sector, f->fd))<0){
+            assert(fprintf(stderr, "Offset: %u\n",f->zonesize));
             return 1;
          }
 
@@ -707,6 +712,7 @@ int ls_file(finder *f, parser *p, superblock *s){
          }
          if((zone = seek_zone(*(f->indirect + k),
                                f->zonesize, f->last_sector, f->fd))<0){
+            assert(fprintf(stderr, "Offset: %u***************\n",zone));
             return 1;
          }
 
@@ -737,6 +743,7 @@ int ls_file(finder *f, parser *p, superblock *s){
                continue;
              }
              if((zone=seek_zone(*(f->indirect+k),f->zonesize,f->last_sector, f->fd))<0){
+                assert(fprintf(stderr, "Offset: %u\n",zone));
                return 1;
              }
 
@@ -765,10 +772,40 @@ int ls_file(finder *f, parser *p, superblock *s){
    else{
       check = fill_perms(perms, type, target.mode);
       printf("%s\t\t%6u %s\n", perms, i.size, d.name);
-      memset(perms, '-', 10);
       return 0;
    }
    return 0;
+}
+
+void get_file(finder *f, parser *p, superblock *s){
+   assert(fprintf(stderr, "get_file()\n"));
+   /*0 on success and 1 on failure*/
+   uint32_t num_bytes, counter, check, ob, blocksize;
+   int32_t zone, type;
+   inode_minix i, target;
+   dir_entry d;
+
+   target = f->target;
+   type = get_type(p, &target);
+
+
+   /*FOR INDIRECT ZONES*/
+      for(uint32_t k = 0; k < (blocksize/4) ; k++){
+         if(!(*(f->indirect + k))){
+            continue;
+         }
+      }
+
+   /*FOR DOUBLE INDIRECT*/
+      for(uint32_t l = 0; l < (blocksize/4); l++){
+          fill_indirect(*(f->two_indirect + l), s, f);
+          for(uint32_t k = 0; k < (blocksize/4) ; k++){/*go through indirect as necesssry*/
+            if(!(*(f->indirect + k))){
+               continue;
+             }
+             
+          }
+      }
 }
 
 

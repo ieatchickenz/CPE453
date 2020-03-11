@@ -6,7 +6,7 @@ int main(int argc, char **argv)
    parser p;
    finder f;
    part_table t;
-   inode_minix i;
+   inode_minix i, targ;
    superblock s;
    int32_t check;
    init_parser(&p);
@@ -29,12 +29,14 @@ int main(int argc, char **argv)
       exit function that will close the passed in file***********????????*****/
    }
 
-   if(p.verbose){
-      verbose0(&t, &p, &f, &s, &i);
-   }
+   
 
    find_target(&s, &f, &p, &i);
-
+   
+   if(p.verbose){
+      verbose0(&t, &p, &f, &s, &(f.target));
+   }
+   
    ls_file(&f, &p, &s);
 
    close_file(&f);
