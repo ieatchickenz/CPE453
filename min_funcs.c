@@ -597,7 +597,7 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
 }
 
 /*this function is to print for minls - returns int to pass message*/
-int ls_file(int32_t type, finder *f){
+int ls_file(int32_t type, finder *f, parser *p){
    /*0 on success and 1 on failure*/
    uint32_t num_nodes, counter, zone, check;
    inode_minix i, target;
@@ -637,7 +637,7 @@ int ls_file(int32_t type, finder *f){
             read(f->fd, &i, sizeof(inode_minix));
             /*here's where we do the printing*/
             check = fill_perms(&perms, type, target.mode);
-            printf("");
+            printf("%s\t\t%6u %s\n", perms, i.size, d->name);
             /*seek back to zone*/
             lseek(f->fd, zone, SEEK_SET);
             counter++;
