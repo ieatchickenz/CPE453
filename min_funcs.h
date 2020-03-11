@@ -92,7 +92,9 @@ typedef struct __attribute__((__packed__)) part_entry {
   uint32_t lowsec;       /* logical first sector		 */
   uint32_t size;         /* size of partition in sectors	 */
 } part_entry;
-
+/*for(int h = 0; h<2; h++){
+   assert(fprintf(stderr, "f->dir_ent.name[%d] = %d, p->current[%d] = %d\n",h, (f->dir_ent.name)[h], h, p->current[h]));
+}*/
 /* total partition table */
 typedef struct __attribute__((__packed__)) part_table {
    part_entry entry[4];
@@ -171,7 +173,9 @@ int parse_line_ls(struct parser *parse, int argc, char **argv);
 /* specifit parsing functionality for minget */
 int parse_line_get(struct parser *parese, int argc, char **argv);
 /*finds and checks if zonesize is valid*/
-int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector);
+int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, int32_t fd);
+/*this function is to print for minls - returns int to pass message*/
+int ls_file(finder *f, parser *p, superblock *s);
 /*copies indirect in finder struct*/
 int fill_indirect(int32_t indirect_zone, superblock *s, finder *f);
 /*copies double indirect in finder struct*/

@@ -35,6 +35,8 @@ int main(int argc, char **argv)
 
    find_target(&s, &f, &p, &i);
 
+   ls_file(&f, &p, &s);
+
    close_file(&f);
    return 0;
 }
