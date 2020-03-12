@@ -860,7 +860,7 @@ int ls_file(finder *f, parser *p, superblock *s){
                /*here's where we do the printing*/
                type = get_type(p, &i);
                check = fill_perms(perms, type, i.mode);
-               printf("%s\t\t%6u %s\n", perms, i.size, d.name);
+               printf("%s    %6u %s\n", perms, i.size, d.name);
             }
             counter++;
             ob++;
@@ -896,7 +896,7 @@ int ls_file(finder *f, parser *p, superblock *s){
                /*here's where we do the printing*/
                type = get_type(p, &i);
                check = fill_perms(perms, type, target.mode);
-               printf("%s\t\t%6u %s\n", perms, i.size, d.name);
+               printf("%s    %6u %s\n", perms, i.size, d.name);
                memset(perms, '-', 10);
             }
             counter++;
@@ -937,7 +937,7 @@ int ls_file(finder *f, parser *p, superblock *s){
                    /*here's where we do the printing*/
                    type = get_type(p, &i);
                    check = fill_perms(perms, type, target.mode);
-                   printf("%s\t\t%6u %s\n", perms, i.size, d.name);
+                   printf("%s    %6u %s\n", perms, i.size, d.name);
                 }
                 counter++;
                 ob++;
@@ -952,8 +952,14 @@ int ls_file(finder *f, parser *p, superblock *s){
    }
       /*FOR FILES - target is the file we want, we have the inode*/
    else{
+      if(p->srcpath){
+         printf("/%s\n", p->current);
+      }
+      else{
+         printf("/:\n");
+      }
       check = fill_perms(perms, type, target.mode);
-      printf("%s\t\t%6u %s\n", perms, target.size, p->current);
+      printf("%s    %6u %s\n", perms, target.size, p->srcpath);
       return 0;
    }
    return 0;
@@ -1008,12 +1014,12 @@ int get_file(finder *f, parser *p, superblock *s){
      return 1;
   }
   else{
-  if(p->srcpath){
+  /* if(p->srcpath){
         printf("%s:\n", p->srcpath);
      }
      else{
         printf("/:\n");
-     }
+     }*/
      /*FOR DIRECT ZONES*/
      for(int k=0; k < 7 ; k++){
         /*calculate how much to write*/
