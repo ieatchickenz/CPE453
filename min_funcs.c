@@ -239,11 +239,14 @@ int get_type(parser *p, inode_minix *i){
 }
 
 
+
+
+
 /* returns 0 on success an 1 on failure with error message*/
 int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
    assert(fprintf(stderr, "find_target()\n"));
    int run = YES, last = NO, brk = NO;
-   uint32_t zone;
+   size_t zone;
    int32_t loopVar = 7;
    /*zone represents the offset to the next zone you're looking for.*/
    if(NULL == memcpy(&(f->target),i,INO_SIZE)){
@@ -284,7 +287,7 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
             zone += read( f->fd, &(f->dir_ent), sizeof(struct dir_entry));
             /* coppying the current name into nulltermed array of 61 for easy comparison */
             memcpy( (p->compare), &(f->dir_ent.name), sizeof(p->compare)-1 );
-            assert(fprintf(stderr,"current = %s compare = %s\n",p->current,p->compare));
+            //assert(fprintf(stderr,"current = %s compare = %s DIRECT LOOP# %d:%d\n",p->current,p->compare,k,j));
             /* found current name in path */
             if(!strcmp( p->current, p->compare )){
                assert(fprintf(stderr, "**************MATCH****************\n"));
@@ -297,20 +300,30 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
                /*target found and last name in path*/
                if(!last){  /*If last is NO*/
                   assert(fprintf(stderr, "current name is %s, next_name returned %d\n",p->current,run));
-                  if( !(run = next_name(p)) )
+                  if( !(run = next_name(p))){
+                     assert(fprintf(stderr,"WE WENT IN*********************\n"));
                      last = YES;
+                  }
                   brk = YES;
                   break;
                }
-               else
+               else{
                   return 0;
+               }
             }
+
          }
          if(brk){
-            brk = NO;
-            continue;
+            break;
          }
       }
+      if(brk){
+         brk = NO;
+         continue;
+      }
+
+
+
 /*****************************INDIRECT ZONES***********************************/
       if(brk){
          brk = NO;
@@ -335,7 +348,7 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
             zone += read( f->fd, &(f->dir_ent), sizeof(struct dir_entry));
             /* coppying the current name into nulltermed array of 61 for easy comparison */
             memcpy( (p->compare), &(f->dir_ent.name), sizeof(p->compare)-1 );
-            assert(fprintf(stderr,"current = %s compare = %s\n",p->current,p->compare));
+            //assert(fprintf(stderr,"current = %s compare = %s INDERECT LOOP# %d:%d\n",p->current,p->compare,k,j));
             /* found current name in path */
             if(!strcmp( p->current, p->compare )){
                assert(fprintf(stderr, "**************MATCH****************\n"));
@@ -356,12 +369,18 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
                else
                   return 0;
             }
+
          }
          if(brk){
-            brk = NO;
-            continue;
+            break;
          }
       }
+
+      if(brk){
+         brk = NO;
+         continue;
+      }
+
 /***************************DOUBLE INDIRECT ZONES******************************/
       if(brk){
          brk = NO;
@@ -380,13 +399,13 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
                return 1;
             }
             /* for each zone, run through and look at each dir etry */
-            for(uint32_t j = 0; j < (f->target.size)/DIR_SIZE; j++){
+            for(uint32_t l = 0; l < (f->target.size)/DIR_SIZE; l++){
                /* seek to  */
                lseek(f->fd, f->partoff + zone, SEEK_SET);
                zone += read( f->fd, &(f->dir_ent), sizeof(struct dir_entry));
                /* coppying the current name into nulltermed array of 61 for easy comparison */
                memcpy( (p->compare), &(f->dir_ent.name), sizeof(p->compare)-1 );
-               assert(fprintf(stderr,"current = %s compare = %s\n",p->current,p->compare));
+               //assert(fprintf(stderr,"current = %s compare = %s DOUBLE-INDERECT LOOP# %d:%d:%d\n",p->current,p->compare,j,k,l));
                /* found current name in path */
                if(!strcmp( p->current, p->compare )){
                   assert(fprintf(stderr, "***************MATCH************\n"));
@@ -399,7 +418,7 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
                   /*target found and last name in path*/
                   if(!last){
                      assert(fprintf(stderr, "current name is %s, and next_name returned %d\n",p->current,run));
-                     if( !(run = next_name(p)) ){
+                     if(!(run = next_name(p))){
                         last = YES;
                      }
                      break;
@@ -453,23 +472,28 @@ int next_name(parser *p){
    /* skip first '/' if there is one*/
    if(  (place == 0) && ( (p->srcpath)[0] == '/') )
       place = 1;
+   assert(fprintf(stderr, "next_name palce = %d\n",place));
    /* traversing path statically returning each time a '/' is encountered */
    for(i = place; i < size; i++){
       c = (p->srcpath)[i];
-      /*assert(fprintf(stderr, "i= %d, c= %c, size= %d, place= %d, where= %d\n",
-                              i,     c,     size,     place,     where));*/
+      assert(fprintf(stderr, "i= %d, c= %c, size= %d, place= %d, where= %d\n",
+                              i,     c,     size,     place,     where));
       if(c == '/'){
          place = place + 1;
          p->current[where] = '\0';
+         assert(fprintf(stderr, "next_name palce = %d returning 1************************\n",place));
          return 1;
       }
       p->current[where] = c;
-      if(where > 59)
+      if(where > 59){
+         assert(fprintf(stderr, "next_name palce = %d returning -1********************\n",place));
          return -1;
+      }
       place++;
       where++;
    }
    p->current[where] = '\0';
+   assert(fprintf(stderr, "next_name palce = %d returning 0************************\n",place));
    return 0;
 }
 
@@ -834,15 +858,17 @@ int ls_file(finder *f, parser *p, superblock *s){
          while(counter <= (num_bytes/DIR_SIZE) && ob < (f->zonesize/DIR_SIZE)){ /*here counter counts directories*/
             lseek(f->fd, f->partoff + zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
             zone += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
-            /*go to inode table and needed inode*/
-            lseek(f->fd, f->offset + ((d.inode)*INO_SIZE), SEEK_SET);
-            read(f->fd, &i, sizeof(inode_minix));
-            /*here's where we do the printing*/
-            type = get_type(p, &i);
-            check = fill_perms(perms, type, target.mode);
-            printf("%s\t\t%6u %s\n", perms, i.size, d.name);
-            memset(perms, '-', 10);
-            /*seek back to zone where we left off*/
+
+            if(d.inode){
+               /*go to inode table and needed inode*/
+               lseek(f->fd, f->offset + ((d.inode-1)*INO_SIZE), SEEK_SET);
+               read(f->fd, &i, sizeof(inode_minix));
+               /*here's where we do the printing*/
+               type = get_type(p, &i);
+               check = fill_perms(perms, type, target.mode);
+               printf("%s\t\t%6u %s\n", perms, i.size, d.name);
+               memset(perms, '-', 10);
+            }
             counter++;
             ob++;
          }
@@ -870,7 +896,7 @@ int ls_file(finder *f, parser *p, superblock *s){
                 /*go to inode table and needed inode*/
 
                 if(d.inode){
-                   lseek(f->fd, f->offset + ((d.inode)*INO_SIZE), SEEK_SET);
+                   lseek(f->fd, f->offset + ((d.inode-1)*INO_SIZE), SEEK_SET);
                    read(f->fd, &i, sizeof(inode_minix));
                    /*here's where we do the printing*/
                    type = get_type(p, &i);
@@ -945,7 +971,7 @@ int get_file(finder *f, parser *p, superblock *s){
      return 1;
   }
   else{
-     if(p->srcpath){
+  if(p->srcpath){
         printf("%s:\n", p->srcpath);
      }
      else{
@@ -1166,6 +1192,7 @@ void verbose2(parser *p, finder *f, part_table *part, superblock *s,
 }
 
 void print_inode(inode_minix *i){
+   time_t currtime;
    printf("File Inode:\n");
    printf("\tuint16_t mode: %X\n", i->mode);
    printf("\tuint16_t links: %u\n", i->links);

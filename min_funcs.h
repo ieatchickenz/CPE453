@@ -192,7 +192,8 @@ void verbose1(superblock *s, finder *f, inode_minix *i);
 /* reserved for verbose1, and the parsing, finder and part_table structs */
 void verbose2(parser *p, finder *f, part_table *part, superblock *s,
               inode_minix *i);
-
+/* test fucktion for inode print */
+void print_inode(inode_minix *i);
 
 
 
