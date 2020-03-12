@@ -284,11 +284,11 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
             zone += read( f->fd, &(f->dir_ent), sizeof(struct dir_entry));
             /* coppying the current name into nulltermed array of 61 for easy comparison */
             memcpy( (p->compare), &(f->dir_ent.name), sizeof(p->compare)-1 );
-            assert(fprintf(stderr,"current = %s and compare = %s\n",p->current,p->compare));
+            assert(fprintf(stderr,"current = %s compare = %s\n",p->current,p->compare));
             /* found current name in path */
             if(!strcmp( p->current, p->compare )){
                assert(fprintf(stderr, "**************MATCH****************\n"));
-               assert(fprintf(stderr,"current = %s and compare = %s\n",p->current,p->compare));
+               assert(fprintf(stderr,"current = %s compare = %s\n",p->current,p->compare));
                /* seek to offset of root inode + ((the inode #)X(inode size)) */
                lseek(f->fd, f->offset+((f->dir_ent.inode-1)*INO_SIZE), SEEK_SET);
                /* update target inode */
@@ -296,16 +296,14 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
                assert(fprintf(stderr, "target inode is %d and it's size is %u\n", f->dir_ent.inode, f->target.size));
                /*target found and last name in path*/
                if(!last){  /*If last is NO*/
-                  if( !(run = next_name(p)) ){
-                     last = YES;
-                  }
                   assert(fprintf(stderr, "current name is %s, next_name returned %d\n",p->current,run));
+                  if( !(run = next_name(p)) )
+                     last = YES;
                   brk = YES;
                   break;
                }
-               else{
+               else
                   return 0;
-               }
             }
          }
          if(brk){
@@ -337,11 +335,11 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
             zone += read( f->fd, &(f->dir_ent), sizeof(struct dir_entry));
             /* coppying the current name into nulltermed array of 61 for easy comparison */
             memcpy( (p->compare), &(f->dir_ent.name), sizeof(p->compare)-1 );
-            assert(fprintf(stderr,"current = %s and compare = %s\n",p->current,p->compare));
+            assert(fprintf(stderr,"current = %s compare = %s\n",p->current,p->compare));
             /* found current name in path */
             if(!strcmp( p->current, p->compare )){
                assert(fprintf(stderr, "**************MATCH****************\n"));
-               assert(fprintf(stderr,"current = %s and compare = %s\n",p->current,p->compare));
+               assert(fprintf(stderr,"current = %s compare = %s\n",p->current,p->compare));
                /* seek to offset of root inode + ((the inode #)X(inode size)) */
                lseek(f->fd, f->offset+((f->dir_ent.inode-1)*INO_SIZE), SEEK_SET);
                /* update target inode */
@@ -349,16 +347,14 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
                assert(fprintf(stderr, "target inode is %d and it's size is %u\n", f->dir_ent.inode, f->target.size));
                /*target found and last name in path*/
                if(!last){
-                  if( !(run = next_name(p)) ){
-                     last = YES;
-                  }
                   assert(fprintf(stderr, "current name is %s, and next_name returned %d\n",p->current,run));
+                  if( !(run = next_name(p)) )
+                     last = YES;
                   brk = YES;
                   break;
                }
-               else{
+               else
                   return 0;
-               }
             }
          }
          if(brk){
@@ -390,11 +386,11 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
                zone += read( f->fd, &(f->dir_ent), sizeof(struct dir_entry));
                /* coppying the current name into nulltermed array of 61 for easy comparison */
                memcpy( (p->compare), &(f->dir_ent.name), sizeof(p->compare)-1 );
-               assert(fprintf(stderr,"current = %s and compare = %s\n",p->current,p->compare));
+               assert(fprintf(stderr,"current = %s compare = %s\n",p->current,p->compare));
                /* found current name in path */
                if(!strcmp( p->current, p->compare )){
-                  assert(fprintf(stderr, "***********MATCH********\n"));
-                  assert(fprintf(stderr,"current = %s and compare = %s\n",p->current,p->compare));
+                  assert(fprintf(stderr, "***************MATCH************\n"));
+                  assert(fprintf(stderr,"current = %s compare = %s\n",p->current,p->compare));
                   /* seek to offset of root inode + ((the inode #)X(inode size)) */
                   lseek(f->fd, f->offset+((f->dir_ent.inode-1)*INO_SIZE), SEEK_SET);
                   /* update target inode */
@@ -402,20 +398,18 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
                   assert(fprintf(stderr, "target inode is %d and it's size is %u\n", f->dir_ent.inode, f->target.size));
                   /*target found and last name in path*/
                   if(!last){
+                     assert(fprintf(stderr, "current name is %s, and next_name returned %d\n",p->current,run));
                      if( !(run = next_name(p)) ){
                         last = YES;
                      }
-                     assert(fprintf(stderr, "current name is %s, and next_name returned %d\n",p->current,run));
                      break;
                   }
-                  else{
+                  else
                      return 0;
-                  }
                }
             }
          }
       }
-
    }while(run || last);
    return 1;
 }
@@ -1169,6 +1163,24 @@ void verbose2(parser *p, finder *f, part_table *part, superblock *s,
         printf("\tSize: %d\n", part->entry[i].size);
         printf("\n\n");
     }
+}
+
+void print_inode(inode_minix *i){
+   printf("File Inode:\n");
+   printf("\tuint16_t mode: %X\n", i->mode);
+   printf("\tuint16_t links: %u\n", i->links);
+   printf("\tuint16_t uid: %u\n", i->uid);
+   printf("\tuint16_t gid: %u\n", i->gid);
+   printf("\tuint16_t size: %u\n", i->size);
+   /*convert times to a string*/
+   currtime = (time_t)(i->atime);
+   printf("\tuint32_t atime: %u --- %s", i->atime, ctime(&currtime));
+
+   currtime = (time_t)(i->mtime);
+   printf("\tuint32_t mtime: %u --- %s", i->mtime, ctime(&currtime));
+
+   currtime = (time_t)(i->atime);
+   printf("\tuint32_t ctime: %u --- %s\n", i->ctime, ctime(&currtime));
 }
 
 
