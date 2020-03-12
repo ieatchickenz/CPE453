@@ -238,15 +238,13 @@ int get_type(parser *p, inode_minix *i){
    }
 }
 
-//    run = 0;
-//    p->srcpath = ".";
-//    p->current[0] = '.';
-//    p->current[1] = '\0';
+
 /* returns 0 on success an 1 on failure with error message*/
 int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
    assert(fprintf(stderr, "find_target()\n"));
-   int run = YES, last = NO;
-   uint32_t zone, loopVar = 7; /******************************** WHAT EXACTLY IS "zone" ?********************************************************************/
+   int run = YES, last = NO, brk = NO;
+   uint32_t zone;
+   int32_t loopVar = 7;
    /*zone represents the offset to the next zone you're looking for.*/
    if(NULL == memcpy(&(f->target),i,INO_SIZE)){
       perror("memcpy()");
@@ -265,11 +263,9 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
 
          return 0;
    }
-
-/*look at line 885*/
    /* if it is a file or folder, proceed */
    do{
-      /*DIRECT ZONES FIRST*/
+/***************************DIRECT ZONES***************************************/
       for(int k = 0; k < loopVar; k++){
          /* move on to next zone if empty */
          if(!(f->target.zone[k])){
@@ -277,13 +273,11 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
             continue;
          }
          /* find blocks per zone, multiply by zone number */
-         /*DAVID ... the problem was that you were checking 0 < zone rather than 0 > zone
-           zone returns -1 if it fails*/
-         if(0 > (zone = seek_zone(f->target.zone[k], f->zonesize, f->last_sector, f->fd))){
-            assert(fprintf(stderr, "seek_zone shit the bed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"));
+         if(!(zone = seek_zone(f->target.zone[k], f->zonesize, f->last_sector, f->fd))){
+            assert(fprintf(stderr, "DAVID shit the bed!!!!!!!!!!!!!!!!!!!!\n"));
             return 1;
          }
-         /* for each zone run through and look at each etry obviously only if directory */
+         /* for each zone, run through and look at each dir etry */
          for(uint32_t j = 0; j < (f->target.size)/DIR_SIZE; j++){
             /* seek to  */
             lseek(f->fd, f->partoff + zone, SEEK_SET);
@@ -293,7 +287,60 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
             assert(fprintf(stderr,"current = %s and compare = %s\n",p->current,p->compare));
             /* found current name in path */
             if(!strcmp( p->current, p->compare )){
-               assert(fprintf(stderr, "they match****************************************\n"));
+               assert(fprintf(stderr, "**************MATCH****************\n"));
+               assert(fprintf(stderr,"current = %s and compare = %s\n",p->current,p->compare));
+               /* seek to offset of root inode + ((the inode #)X(inode size)) */
+               lseek(f->fd, f->offset+((f->dir_ent.inode-1)*INO_SIZE), SEEK_SET);
+               /* update target inode */
+               read(f->fd, &(f->target), INO_SIZE);
+               assert(fprintf(stderr, "target inode is %d and it's size is %u\n", f->dir_ent.inode, f->target.size));
+               /*target found and last name in path*/
+               if(!last){  /*If last is NO*/
+                  if( !(run = next_name(p)) ){
+                     last = YES;
+                  }
+                  assert(fprintf(stderr, "current name is %s, next_name returned %d\n",p->current,run));
+                  brk = YES;
+                  break;
+               }
+               else{
+                  return 0;
+               }
+            }
+         }
+         if(brk){
+            brk = NO;
+            continue;
+         }
+      }
+/*****************************INDIRECT ZONES***********************************/
+      if(brk){
+         brk = NO;
+         continue;
+      }
+      loopVar = (s->blocksize)/4;
+      for(int k = 0; k < loopVar; k++){
+         /* move on to next zone if empty */
+         if(!(f->target.zone[k])){
+            assert(fprintf(stderr, "zone # %d is blank\n",k));
+            continue;
+         }
+         /* find blocks per zone, multiply by zone number */
+         if(!(zone = seek_zone(f->target.zone[k], f->zonesize, f->last_sector, f->fd))){
+            assert(fprintf(stderr, "DAVID shit the bed!!!!!!!!!!!!!!!!!!!!\n"));
+            return 1;
+         }
+         /* for each zone, run through and look at each dir etry */
+         for(uint32_t j = 0; j < (f->target.size)/DIR_SIZE; j++){
+            /* seek to  */
+            lseek(f->fd, f->partoff + zone, SEEK_SET);
+            zone += read( f->fd, &(f->dir_ent), sizeof(struct dir_entry));
+            /* coppying the current name into nulltermed array of 61 for easy comparison */
+            memcpy( (p->compare), &(f->dir_ent.name), sizeof(p->compare)-1 );
+            assert(fprintf(stderr,"current = %s and compare = %s\n",p->current,p->compare));
+            /* found current name in path */
+            if(!strcmp( p->current, p->compare )){
+               assert(fprintf(stderr, "**************MATCH****************\n"));
                assert(fprintf(stderr,"current = %s and compare = %s\n",p->current,p->compare));
                /* seek to offset of root inode + ((the inode #)X(inode size)) */
                lseek(f->fd, f->offset+((f->dir_ent.inode-1)*INO_SIZE), SEEK_SET);
@@ -306,34 +353,76 @@ int find_target(superblock *s, finder *f, parser *p, inode_minix *i){
                      last = YES;
                   }
                   assert(fprintf(stderr, "current name is %s, and next_name returned %d\n",p->current,run));
+                  brk = YES;
                   break;
                }
                else{
-                  last = NO;
+                  return 0;
                }
             }
-            else{
-               assert(fprintf(stderr, "current and comp mismatch\n"));
+         }
+         if(brk){
+            brk = NO;
+            continue;
+         }
+      }
+/***************************DOUBLE INDIRECT ZONES******************************/
+      if(brk){
+         brk = NO;
+         continue;
+      }
+      for(int j = 0; j < loopVar; j++){
+         fill_indirect(*(f->two_indirect + j), s, f);
+         for(int k = 0; k < loopVar; k++){
+            /* move on to next zone if empty */
+            if(!(*(f->indirect + k))){
+               assert(fprintf(stderr, "zone # %d is blank\n",k));
+               continue;
+            }
+            if(!(zone = seek_zone((*(f->indirect+k)), f->zonesize, f->last_sector, f->fd))){
+               assert(fprintf(stderr, "DAVID shit the bed!!!!!!!!!!!!!!!!!!!!\n"));
+               return 1;
+            }
+            /* for each zone, run through and look at each dir etry */
+            for(uint32_t j = 0; j < (f->target.size)/DIR_SIZE; j++){
+               /* seek to  */
+               lseek(f->fd, f->partoff + zone, SEEK_SET);
+               zone += read( f->fd, &(f->dir_ent), sizeof(struct dir_entry));
+               /* coppying the current name into nulltermed array of 61 for easy comparison */
+               memcpy( (p->compare), &(f->dir_ent.name), sizeof(p->compare)-1 );
+               assert(fprintf(stderr,"current = %s and compare = %s\n",p->current,p->compare));
+               /* found current name in path */
+               if(!strcmp( p->current, p->compare )){
+                  assert(fprintf(stderr, "***********MATCH********\n"));
+                  assert(fprintf(stderr,"current = %s and compare = %s\n",p->current,p->compare));
+                  /* seek to offset of root inode + ((the inode #)X(inode size)) */
+                  lseek(f->fd, f->offset+((f->dir_ent.inode-1)*INO_SIZE), SEEK_SET);
+                  /* update target inode */
+                  read(f->fd, &(f->target), INO_SIZE);
+                  assert(fprintf(stderr, "target inode is %d and it's size is %u\n", f->dir_ent.inode, f->target.size));
+                  /*target found and last name in path*/
+                  if(!last){
+                     if( !(run = next_name(p)) ){
+                        last = YES;
+                     }
+                     assert(fprintf(stderr, "current name is %s, and next_name returned %d\n",p->current,run));
+                     break;
+                  }
+                  else{
+                     return 0;
+                  }
+               }
             }
          }
-         assert(fprintf(stderr, "Done with directory sized for loop\n"));
       }
-      /*INDIRECT NEXT ... */
-      loopVar = (s->blocksize)/4;
-      assert(fprintf(stderr, "Done with 1-7 for loop\n"));
-      /*INDIRECT NEXT ... */
-      // for(int k = 0; k < (s->blocksize)/4; k++){
-      //
-      // }
-      /*DOUBLE INDIRECT*/
 
    }while(run || last);
-   return 0;
+   return 1;
 }
 
 
 /*finds and checks if zonesize is valid*/
-int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, int32_t fd){
+uint32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, int32_t fd){
    //if(zone_num != 0)
       //assert(fprintf(stderr, "seek_zone()  zone_num: %u\n", zone_num));
    /*returns -1 if out of bounds*/
@@ -348,7 +437,7 @@ int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector, i
    //assert(fprintf(stderr, "seek_zone()  cutoff: %u\n", cutoff));
    if((where = zone_num * zone_size) > cutoff){
       //fprintf(stderr, "Zone is out of bounds. Zone: %u\n", where);
-       return -1;
+       return 0;
    }
    //assert(fprintf(stderr, "seek_zone()  zone_num: %u\n", zone_num));
    return where;
@@ -480,7 +569,11 @@ int parse_line_ls(struct parser *parse, int argc, char **argv){
 /*coppies indirect in finder struct*/
 int fill_indirect(int32_t indirect_zone, superblock *s, finder *f){
    /*0 for success 1 for failure*/
-   int32_t indirect = seek_zone(indirect_zone, f->zonesize, f->last_sector, f->fd);
+   int32_t indirect;
+   if(!(indirect = seek_zone(indirect_zone, f->zonesize, f->last_sector, f->fd))){
+      return 0;
+   }
+
    if( indirect < 0 ){
       return 1;
    }
@@ -503,7 +596,11 @@ int fill_indirect(int32_t indirect_zone, superblock *s, finder *f){
 /*copies double indirect in finder struct*/
 int fill_two_indirect(int32_t two_indirect_zone, superblock *s, finder *f){
    /*0 for success 1 for failure*/
-   int32_t two_indirect = seek_zone(two_indirect_zone, f->zonesize, f->last_sector, f->fd);
+   int32_t two_indirect;
+   if(!(two_indirect = seek_zone(two_indirect_zone, f->zonesize, f->last_sector, f->fd))){
+      return 0;
+   }
+
    if(two_indirect < 0){
       return 1;
    }
@@ -659,7 +756,7 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
 int ls_file(finder *f, parser *p, superblock *s){
    assert(fprintf(stderr, "ls_file()\n"));
    /*0 on success and 1 on failure*/
-   uint32_t num_bytes, counter, check, ob, blocksize
+   uint32_t num_bytes, counter, check, ob, blocksize;
    size_t zone;
    int32_t type;
    inode_minix i, target;
@@ -672,6 +769,7 @@ int ls_file(finder *f, parser *p, superblock *s){
    counter = 0;
    ob = 0;   /*out of bounds*/
    zone = 0;
+
    assert(fprintf(stderr, "YUH: %u\n", target.indirect));
    if((check = fill_indirect(target.indirect, s, f))){/*FAILING HERE WHY*/
        return 1;
@@ -700,7 +798,7 @@ int ls_file(finder *f, parser *p, superblock *s){
          //    continue;
          // }
 
-         if((zone = seek_zone(target.zone[k],f->zonesize,f->last_sector, f->fd))<0){
+         if(!(zone = seek_zone(target.zone[k],f->zonesize,f->last_sector, f->fd))){
             assert(fprintf(stderr, "Offset: %u\n",f->zonesize));
             return 1;
          }
@@ -733,9 +831,9 @@ int ls_file(finder *f, parser *p, superblock *s){
          if(!(*(f->indirect + k))){
             continue;
          }
-         if((zone = seek_zone(*(f->indirect + k),
-                               f->zonesize, f->last_sector, f->fd))<0){
-            assert(fprintf(stderr, "Offset: %u***************\n",zone));
+         if(!(zone = seek_zone(*(f->indirect + k),
+                               f->zonesize, f->last_sector, f->fd))){
+            assert(fprintf(stderr, "Offset: %lu***************\n",zone));
             return 1;
          }
 
@@ -766,8 +864,9 @@ int ls_file(finder *f, parser *p, superblock *s){
             if(!(*(f->indirect + k))){
                continue;
              }
-             if((zone=seek_zone(*(f->indirect+k),f->zonesize,f->last_sector, f->fd))<0){
-                assert(fprintf(stderr, "Offset: %u\n",zone));
+
+             if(!(zone=seek_zone(*(f->indirect+k),f->zonesize,f->last_sector, f->fd))){
+                assert(fprintf(stderr, "Offset: %lu\n",zone));
                return 1;
              }
 
@@ -806,16 +905,12 @@ int ls_file(finder *f, parser *p, superblock *s){
 int get_file(finder *f, parser *p, superblock *s){
    assert(fprintf(stderr, "get_file()\n"));
    /*0 on success and 1 on failure*/
-   uint32_t num_bytes, counter, check, ob, blocksize;
+   uint32_t num_bytes, howmuch, blocksize;
    int32_t zone, type, wfile;
-   inode_minix i, target;
-   dir_entry d;
+   inode_minix target;
    uint8_t *real_zone;
    blocksize = s->blocksize; /* ALEX!   ... David did this because block size was uninitialized hope it's right */
 
-   char perms[11] = {'-','-','-','-','-','-','-','-','-','-','\0'};
-
-   num_bytes = filesize;
    target = f->target;
    type = get_type(p, &target);
    real_zone = malloc(f->zonesize);
@@ -823,27 +918,36 @@ int get_file(finder *f, parser *p, superblock *s){
    /*Open the corect */
    if(p->dstpath){
       if(-1 == (wfile = open(p->dstpath, O_WRONLY & O_CREAT & O_TRUNC))){
+         free(real_zone);
          return 1;
       }
    }
    else{
-      if(-1 == (wfile = open("stdout", O_WRONLY))){
-         return 1;
-      }
+      wfile = STDOUT_FILENO;
    }
 
    /*file size here*/
-   num_bytes = target->size;
+   num_bytes = target.size;
 
    /*START*/
   if(type < 0){
-     close(wfile);
+     if(p->dstpath)
+         close(wfile);
+     free(real_zone);
      return 1;
   }
 
   if(type){  /*DIRECTORY*/
-     printf("%s: Not a Regular File\n", p->srcpath);
-     close(wfile);
+     if(p->srcpath){
+         printf("%s: Not a Regular File\n", p->srcpath);
+     }
+     else{
+         printf("/: Not a Regular File\n");
+     }
+
+     if(p->dstpath)
+         close(wfile);
+     free(real_zone);
      return 1;
   }
   else{
@@ -855,65 +959,104 @@ int get_file(finder *f, parser *p, superblock *s){
      }
      /*FOR DIRECT ZONES*/
      for(int k=0; k < 7 ; k++){
+        /*calculate how much to write*/
+        if(num_bytes <= 0){
+           if(p->dstpath)
+              close(wfile);
+           free(real_zone);
+           return 0;
+        }
+        howmuch = (num_bytes > f->zonesize) ? f->zonesize : num_bytes;
         if(!(target.zone[k])){
             memset(real_zone, 0, f->zonesize);
             /*check this please*/
-            count += write(file, real_zone, f->zonesize);
+            num_bytes -= write(wfile, real_zone, howmuch);
             continue;
         }
 
-        if((zone = seek_zone(target.zone[k],f->zonesize,f->last_sector, f->fd))<0){
+        if(!(zone = seek_zone(target.zone[k],f->zonesize,f->last_sector, f->fd))){
            assert(fprintf(stderr, "Offset: %u\n",f->zonesize));
-           close(wfile);
+           if(p->dstpath)
+              close(wfile);
+           free(real_zone);
            return 1;
         }
 
-        while(counter <= num_bytes){ /*here counter counts directories*/
-           lseek(f->fd, zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/\
+        lseek(f->fd, f->partoff + zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
+        read(f->fd, real_zone, f->zonesize);/*fill block*/
 
-           counter += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
-
-           if(d.inode){
-              /*go to inode table and needed inode*/
-              lseek(f->fd, (f->offset + ((d.inode -1)*INO_SIZE)), SEEK_SET);
-              read(f->fd, &i, sizeof(inode_minix));
-              /*here's where we do the printing*/
-              check = fill_perms(perms, type, i.mode);
-              printf("%s\t\t%6u %s\n", perms, i.size, d.name);
-              /*seek back to zone where we left off*/
-           }
-           counter++;
-           ob++;
-        }
-        ob = 0;
-        if(counter == (num_bytes/DIR_SIZE)){ /*no need to check more blocks*/
-           close(wfile);
-           return 0;
-        }
+        num_bytes -= write(wfile, real_zone, howmuch);/*writes to output*/
      }
 
    /*FOR INDIRECT ZONES*/
       for(uint32_t k = 0; k < (blocksize/4) ; k++){
+         /*calculate how much to write*/
+         if(num_bytes <= 0){
+            if(p->dstpath)
+               close(wfile);
+            free(real_zone);
+            return 0;
+         }
+         howmuch = (num_bytes > f->zonesize) ? f->zonesize : num_bytes;
          if(!(*(f->indirect + k))){
-            continue;
+             memset(real_zone, 0, f->zonesize);
+             /*check this please*/
+             num_bytes -= write(wfile, real_zone, howmuch);
+             continue;
          }
 
+         if(!(zone = seek_zone(target.zone[k],f->zonesize,f->last_sector, f->fd))){
+            assert(fprintf(stderr, "Offset: %u\n",f->zonesize));
+            if(p->dstpath)
+               close(wfile);
+            return 1;
+         }
+
+         lseek(f->fd, f->partoff + zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
+         read(f->fd, real_zone, f->zonesize);/*fill block*/
+
+         num_bytes -= write(wfile, real_zone, howmuch);/*writes to output*/
       }
 
    /*FOR DOUBLE INDIRECT*/
       for(uint32_t l = 0; l < (blocksize/4); l++){
           fill_indirect(*(f->two_indirect + l), s, f);
           for(uint32_t k = 0; k < (blocksize/4) ; k++){/*go through indirect as necesssry*/
-            if(!(*(f->indirect + k))){
-               continue;
+             /*calculate how much to write*/
+             if(num_bytes <= 0){
+                if(p->dstpath)
+                   close(wfile);
+                free(real_zone);
+                return 0;
+             }
+             howmuch = (num_bytes > f->zonesize) ? f->zonesize : num_bytes;
+             if(!(*(f->indirect + k))){
+                 memset(real_zone, 0, f->zonesize);
+                 /*check this please*/
+                 num_bytes -= write(wfile, real_zone, howmuch);
+                 continue;
              }
 
+             if(!(zone = seek_zone(target.zone[k],f->zonesize,f->last_sector, f->fd))){
+                assert(fprintf(stderr, "Offset: %u\n",f->zonesize));
+                if(p->dstpath)
+                   close(wfile);
+                return 1;
+             }
+
+             lseek(f->fd, f->partoff + zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/
+             read(f->fd, real_zone, f->zonesize);/*fill block*/
+
+             num_bytes -= write(wfile, real_zone, howmuch);/*writes to output*/
           }
       }
    }
+   if(num_bytes <= 0){
+      printf("File wayyyyy too big.\n");
+      return 1;
+   }
+   return 0;
 }
-
-
 
 void print_usage_ls(){
     printf("usage: minls [-v] [-p part [-s subpart]] imagefile [path]\n");
@@ -1046,24 +1189,4 @@ int test_next_name(parser *p){
       printf( "next_name returned %s\n", p->current );
    return 1;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* end */

@@ -4,6 +4,8 @@
     */
 #define YES       1
 #define NO        0
+#define SINGLE    1
+#define DOUBLE    2
 #define SEC_SIZE  512      /* minix sector size        */
 #define SBOFFSET  1024     /* offset to Super Block or 0x400*/
 #define PARTS     0x1BE    /* partition table location */
@@ -171,7 +173,7 @@ int parse_line_ls(struct parser *parse, int argc, char **argv);
 /* specifit parsing functionality for minget */
 int parse_line_get(struct parser *parese, int argc, char **argv);
 /*finds and checks if zonesize is valid*/
-int32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector,
+uint32_t seek_zone(uint32_t zone_num, uint32_t zone_size, uint32_t last_sector,
    int32_t fd);
 /*this function is to print for minls - returns int to pass message*/
 int ls_file(finder *f, parser *p, superblock *s);

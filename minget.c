@@ -6,7 +6,7 @@ int main(int argc, char **argv)
    parser p;
    finder f;
    part_table t;
-   inode_minix i, targ;
+   inode_minix i;
    superblock s;
    int32_t check;
    init_parser(&p);
@@ -28,8 +28,6 @@ int main(int argc, char **argv)
       return 1;  /**************instead of returning 1, we should call an
       exit function that will close the passed in file***********????????*****/
    }
-
-
 
    find_target(&s, &f, &p, &i);
 

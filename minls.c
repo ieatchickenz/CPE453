@@ -6,7 +6,7 @@ int main(int argc, char **argv)
    parser p;
    finder f;
    part_table t;
-   inode_minix i, targ;
+   inode_minix i;
    superblock s;
    int32_t check;
    init_parser(&p);
