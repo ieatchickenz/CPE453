@@ -659,8 +659,9 @@ int parse_line_get(struct parser *parse, int argc, char **argv){
 int ls_file(finder *f, parser *p, superblock *s){
    assert(fprintf(stderr, "ls_file()\n"));
    /*0 on success and 1 on failure*/
-   uint32_t num_bytes, counter, check, ob, blocksize;
-   int32_t zone, type;
+   uint32_t num_bytes, counter, check, ob, blocksize
+   size_t zone;
+   int32_t type;
    inode_minix i, target;
    dir_entry d;
    target = f->target;
@@ -809,12 +810,15 @@ int get_file(finder *f, parser *p, superblock *s){
    int32_t zone, type, wfile;
    inode_minix i, target;
    dir_entry d;
+   uint8_t *real_zone;
    blocksize = s->blocksize; /* ALEX!   ... David did this because block size was uninitialized hope it's right */
 
    char perms[11] = {'-','-','-','-','-','-','-','-','-','-','\0'};
 
+   num_bytes = filesize;
    target = f->target;
    type = get_type(p, &target);
+   real_zone = malloc(f->zonesize);
 
    /*Open the corect */
    if(p->dstpath){
@@ -827,13 +831,19 @@ int get_file(finder *f, parser *p, superblock *s){
          return 1;
       }
    }
+
+   /*file size here*/
+   num_bytes = target->size;
+
    /*START*/
   if(type < 0){
+     close(wfile);
      return 1;
   }
 
   if(type){  /*DIRECTORY*/
      printf("%s: Not a Regular File\n", p->srcpath);
+     close(wfile);
      return 1;
   }
   else{
@@ -846,18 +856,22 @@ int get_file(finder *f, parser *p, superblock *s){
      /*FOR DIRECT ZONES*/
      for(int k=0; k < 7 ; k++){
         if(!(target.zone[k])){
-           continue;
+            memset(real_zone, 0, f->zonesize);
+            /*check this please*/
+            count += write(file, real_zone, f->zonesize);
+            continue;
         }
 
         if((zone = seek_zone(target.zone[k],f->zonesize,f->last_sector, f->fd))<0){
            assert(fprintf(stderr, "Offset: %u\n",f->zonesize));
+           close(wfile);
            return 1;
         }
 
-        while(counter <= (num_bytes/DIR_SIZE) && ob < (f->zonesize/DIR_SIZE)){ /*here counter counts directories*/
+        while(counter <= num_bytes){ /*here counter counts directories*/
            lseek(f->fd, zone, SEEK_SET);/*in correct zone now, traverse dir_ents*/\
 
-           zone += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
+           counter += read(f->fd, &d, sizeof(dir_entry));/*find next entry*/
 
            if(d.inode){
               /*go to inode table and needed inode*/
@@ -873,6 +887,7 @@ int get_file(finder *f, parser *p, superblock *s){
         }
         ob = 0;
         if(counter == (num_bytes/DIR_SIZE)){ /*no need to check more blocks*/
+           close(wfile);
            return 0;
         }
      }
